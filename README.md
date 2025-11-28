@@ -1,3 +1,60 @@
+SORMAS AI - Global Predictive Disease Surveillance Platform
+
+  The Big Picture:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                    SORMAS AI GLOBAL HUB                         │
+  │         (World-level aggregated view, One Health)               │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+  │  │ Nigeria  │  │  Ghana   │  │  Kenya   │  │   etc.   │        │
+  │  │ Tenant   │  │ Tenant   │  │ Tenant   │  │  Tenant  │        │
+  │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘        │
+  │       │             │             │             │               │
+  │  ┌────▼─────┐  ┌────▼─────┐  ┌────▼─────┐  ┌────▼─────┐        │
+  │  │   ETL    │  │   ETL    │  │   ETL    │  │   ETL    │        │
+  │  │ Pipeline │  │ Pipeline │  │ Pipeline │  │ Pipeline │        │
+  │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘        │
+  │       │             │             │             │               │
+  │  ┌────▼─────────────▼─────────────▼─────────────▼─────┐        │
+  │  │              DATA SOURCES                          │        │
+  │  │  • API Gateway (existing SORMAS, DHIS2, etc.)     │        │
+  │  │  • CSV/Excel uploads                               │        │
+  │  │  • Manual entry (minimal, for new institutions)   │        │
+  │  └────────────────────────────────────────────────────┘        │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Key Architectural Decisions:
+
+  | Aspect         | Decision                                     |
+  |----------------|----------------------------------------------|
+  | Database       | PostgreSQL via Supabase                      |
+  | Frontend       | React/Next.js                                |
+  | Multi-tenant   | Yes - shared platform, isolated country data |
+  | Data Entry     | NO direct entry - ETL from existing systems  |
+  | Data Sources   | API integrations + CSV imports               |
+  | Access Control | RBAC with aggregate-only at global level     |
+  | Core Focus     | Predictive Analytics for outbreak prediction |
+
+  The ETL + Data Quality Engine (This is the heart):
+  1. Extract - Pull from country APIs (SORMAS, DHIS2, custom) or CSV uploads
+  2. Transform - Map their variables → our standardized schema
+  3. Load - Clean data into country tenant
+  4. QA - Validation rules, deduplication, anomaly detection
+  5. Aggregate - Roll up for global/regional views
+
+  Module Priority:
+  1. Configuration Engine (country setup, variable mapping, API connections)
+  2. ETL Pipeline (the core data flow)
+  3. Cases & Contacts (standardized data model)
+  4. Dashboard & Analytics (with predictive models)
+  5. User Management & RBAC
+
+  What makes this different from regular SORMAS:
+  - Not a replacement - a companion/overlay for prediction
+  - Countries keep their existing systems
+  - We consume, clean, standardize, and predict
+  - Global visibility with privacy (aggregates only at higher levels)
+
 <p align="center">
   <a href="https://sormas.org/">
     <img
