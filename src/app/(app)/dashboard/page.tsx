@@ -16,7 +16,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Bell,
-  Microscope,
   ChevronRight,
   Calendar,
   MapPin,
@@ -25,6 +24,23 @@ import {
   BarChart3,
 } from 'lucide-react';
 import Link from 'next/link';
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 // Mock data - will be replaced with real data from Supabase
 const stats = [
@@ -97,22 +113,28 @@ const recentAlerts = [
 ];
 
 const topDiseases = [
-  { name: 'Malaria', cases: 5678, change: -8, color: 'bg-emerald-500' },
-  { name: 'Cholera', cases: 2340, change: 15, color: 'bg-blue-500' },
-  { name: 'COVID-19', cases: 1234, change: 5, color: 'bg-purple-500' },
-  { name: 'Measles', cases: 890, change: 22, color: 'bg-orange-500' },
-  { name: 'Lassa Fever', cases: 45, change: -12, color: 'bg-red-500' },
+  { name: 'Malaria', cases: 5678, change: -8, color: '#10B981' },
+  { name: 'Cholera', cases: 2340, change: 15, color: '#3B82F6' },
+  { name: 'COVID-19', cases: 1234, change: 5, color: '#8B5CF6' },
+  { name: 'Measles', cases: 890, change: 22, color: '#F97316' },
+  { name: 'Lassa Fever', cases: 145, change: -12, color: '#EF4444' },
 ];
 
 const weeklyTrend = [
-  { week: 'W48', cases: 1234, contacts: 456 },
-  { week: 'W49', cases: 1456, contacts: 523 },
-  { week: 'W50', cases: 1678, contacts: 589 },
-  { week: 'W51', cases: 1890, contacts: 612 },
-  { week: 'W52', cases: 2123, contacts: 678 },
-  { week: 'W01', cases: 2345, contacts: 734 },
-  { week: 'W02', cases: 2567, contacts: 801 },
-  { week: 'W03', cases: 2789, contacts: 867 },
+  { week: 'W48', cases: 1234, contacts: 456, deaths: 12 },
+  { week: 'W49', cases: 1456, contacts: 523, deaths: 15 },
+  { week: 'W50', cases: 1678, contacts: 589, deaths: 18 },
+  { week: 'W51', cases: 1890, contacts: 612, deaths: 14 },
+  { week: 'W52', cases: 2123, contacts: 678, deaths: 21 },
+  { week: 'W01', cases: 2345, contacts: 734, deaths: 19 },
+  { week: 'W02', cases: 2567, contacts: 801, deaths: 23 },
+  { week: 'W03', cases: 2789, contacts: 867, deaths: 17 },
+];
+
+const classificationData = [
+  { name: 'Confirmed', value: 6234, color: '#EF4444' },
+  { name: 'Probable', value: 3456, color: '#F97316' },
+  { name: 'Suspected', value: 2766, color: '#FBBF24' },
 ];
 
 const activeOutbreaks = [
@@ -145,9 +167,44 @@ const activeOutbreaks = [
   },
 ];
 
-export default function DashboardPage() {
-  const maxCases = Math.max(...weeklyTrend.map(w => w.cases));
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div
+        className="rounded-lg border p-4 shadow-2xl"
+        style={{
+          backgroundColor: 'rgb(20, 20, 28)',
+          borderColor: 'rgb(60, 65, 80)',
+          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
+        }}
+      >
+        <p
+          className="mb-2 font-semibold text-sm"
+          style={{ color: 'rgb(248, 250, 252)' }}
+        >
+          {label}
+        </p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center gap-2 py-1">
+            <div
+              className="h-3 w-3 rounded-full"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span style={{ color: 'rgb(148, 163, 184)' }} className="text-sm">
+              {entry.name}:
+            </span>
+            <span style={{ color: 'rgb(248, 250, 252)' }} className="text-sm font-medium">
+              {entry.value.toLocaleString()}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
+export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -223,110 +280,98 @@ export default function DashboardPage() {
                 <BarChart3 className="h-5 w-5 text-primary" />
                 Weekly Epidemiological Trend
               </CardTitle>
-              <p className="text-sm text-muted-foreground">Cases and contacts over the last 8 weeks</p>
+              <p className="text-sm text-muted-foreground">Cases, contacts, and deaths over the last 8 weeks</p>
             </div>
-            <Button variant="ghost" size="sm">
-              View Details
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
+            <Link href="/analytics">
+              <Button variant="ghost" size="sm">
+                View Analytics
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {/* Chart Header */}
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-primary" />
-                  <span className="text-sm text-muted-foreground">Cases</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-emerald-500" />
-                  <span className="text-sm text-muted-foreground">Contacts</span>
-                </div>
-              </div>
-
-              {/* Bar Chart */}
-              <div className="flex h-48 items-end gap-2">
-                {weeklyTrend.map((week, index) => (
-                  <div key={week.week} className="group relative flex flex-1 flex-col items-center gap-1">
-                    {/* Tooltip */}
-                    <div className="absolute -top-16 left-1/2 z-10 hidden -translate-x-1/2 rounded-lg bg-popover p-2 text-xs shadow-lg group-hover:block">
-                      <p className="font-medium text-foreground">{week.week}</p>
-                      <p className="text-primary">{week.cases} cases</p>
-                      <p className="text-emerald-500">{week.contacts} contacts</p>
-                    </div>
-
-                    {/* Bars Container */}
-                    <div className="flex w-full gap-1">
-                      {/* Cases Bar */}
-                      <div
-                        className="flex-1 rounded-t-sm bg-primary transition-all group-hover:opacity-80"
-                        style={{ height: `${(week.cases / maxCases) * 160}px` }}
-                      />
-                      {/* Contacts Bar */}
-                      <div
-                        className="flex-1 rounded-t-sm bg-emerald-500 transition-all group-hover:opacity-80"
-                        style={{ height: `${(week.contacts / maxCases) * 160}px` }}
-                      />
-                    </div>
-
-                    {/* Week Label */}
-                    <span className="text-xs text-muted-foreground">{week.week}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={weeklyTrend}>
+                <defs>
+                  <linearGradient id="colorCases" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorContacts" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
+                <XAxis dataKey="week" stroke="#A1A1AA" fontSize={12} />
+                <YAxis stroke="#A1A1AA" fontSize={12} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="cases"
+                  name="Cases"
+                  stroke="#6366F1"
+                  strokeWidth={2}
+                  fill="url(#colorCases)"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="contacts"
+                  name="Contacts"
+                  stroke="#10B981"
+                  strokeWidth={2}
+                  fill="url(#colorContacts)"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="deaths"
+                  name="Deaths"
+                  stroke="#EF4444"
+                  strokeWidth={2}
+                  dot={{ fill: '#EF4444', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Top Diseases */}
+        {/* Case Classification Pie Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              Top Diseases
+              Case Classification
             </CardTitle>
-            <p className="text-sm text-muted-foreground">This week's case distribution</p>
+            <p className="text-sm text-muted-foreground">Distribution by confirmation status</p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {topDiseases.map((disease, index) => (
-                <div
-                  key={disease.name}
-                  className="group flex items-center gap-4 rounded-lg p-2 transition-colors hover:bg-muted/50"
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={classificationData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground">
-                    {index + 1}
-                  </span>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-foreground">{disease.name}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">
-                          {disease.cases.toLocaleString()}
-                        </span>
-                        <div
-                          className={`flex items-center gap-0.5 text-xs ${
-                            disease.change > 0 ? 'text-destructive' : 'text-success'
-                          }`}
-                        >
-                          {disease.change > 0 ? (
-                            <TrendingUp className="h-3 w-3" />
-                          ) : (
-                            <TrendingDown className="h-3 w-3" />
-                          )}
-                          {Math.abs(disease.change)}%
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={`h-full ${disease.color} transition-all`}
-                        style={{
-                          width: `${(disease.cases / topDiseases[0].cases) * 100}%`,
-                        }}
-                      />
-                    </div>
+                  {classificationData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="mt-4 space-y-2">
+              {classificationData.map((item) => (
+                <div key={item.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-sm text-muted-foreground">{item.name}</span>
                   </div>
+                  <span className="text-sm font-medium text-foreground">{item.value.toLocaleString()}</span>
                 </div>
               ))}
             </div>
@@ -334,8 +379,45 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Second Row */}
+      {/* Disease Bar Chart + Alerts */}
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Top Diseases Bar Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-primary" />
+              Top Diseases This Week
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Case counts by disease type</p>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={topDiseases} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272A" horizontal={false} />
+                <XAxis type="number" stroke="#A1A1AA" fontSize={12} />
+                <YAxis type="category" dataKey="name" stroke="#A1A1AA" fontSize={12} width={80} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="cases" radius={[0, 4, 4, 0]}>
+                  {topDiseases.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {topDiseases.map((disease) => (
+                <div key={disease.name} className="flex items-center justify-between rounded-lg bg-muted/50 p-2">
+                  <span className="text-xs text-muted-foreground">{disease.name}</span>
+                  <div className={`flex items-center gap-1 text-xs ${disease.change > 0 ? 'text-destructive' : 'text-success'}`}>
+                    {disease.change > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {Math.abs(disease.change)}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Recent Alerts */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -397,63 +479,63 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Active Outbreaks */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-destructive" />
-                Active Outbreaks
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">Ongoing disease events requiring response</p>
-            </div>
-            <Link href="/events">
-              <Button variant="ghost" size="sm">
-                View All
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {activeOutbreaks.map((outbreak) => (
-                <div
-                  key={outbreak.id}
-                  className="group rounded-xl border border-border p-4 transition-all hover:border-destructive/50 hover:bg-muted/30"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive">{outbreak.disease}</Badge>
-                        <Badge variant="outline">{outbreak.status}</Badge>
-                      </div>
-                      <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        {outbreak.location}
-                      </p>
+      {/* Active Outbreaks */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Flame className="h-5 w-5 text-destructive" />
+              Active Outbreaks
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Ongoing disease events requiring response</p>
+          </div>
+          <Link href="/events">
+            <Button variant="ghost" size="sm">
+              View All Events
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            {activeOutbreaks.map((outbreak) => (
+              <div
+                key={outbreak.id}
+                className="group rounded-xl border border-border p-4 transition-all hover:border-destructive/50 hover:bg-muted/30"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="destructive">{outbreak.disease}</Badge>
+                      <Badge variant="outline">{outbreak.status}</Badge>
                     </div>
-                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {outbreak.startDate}
+                    <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      {outbreak.location}
                     </p>
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-4">
-                    <div className="rounded-lg bg-muted/50 p-2 text-center">
-                      <p className="text-lg font-bold text-foreground">{outbreak.cases}</p>
-                      <p className="text-xs text-muted-foreground">Cases</p>
-                    </div>
-                    <div className="rounded-lg bg-destructive/10 p-2 text-center">
-                      <p className="text-lg font-bold text-destructive">{outbreak.deaths}</p>
-                      <p className="text-xs text-muted-foreground">Deaths</p>
-                    </div>
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    {outbreak.startDate}
+                  </p>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div className="rounded-lg bg-muted/50 p-2 text-center">
+                    <p className="text-lg font-bold text-foreground">{outbreak.cases}</p>
+                    <p className="text-xs text-muted-foreground">Cases</p>
+                  </div>
+                  <div className="rounded-lg bg-destructive/10 p-2 text-center">
+                    <p className="text-lg font-bold text-destructive">{outbreak.deaths}</p>
+                    <p className="text-xs text-muted-foreground">Deaths</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Data Integration Status */}
       <Card>

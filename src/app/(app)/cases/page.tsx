@@ -396,10 +396,12 @@ export default function CasesPage() {
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="mr-1 h-4 w-4" />
-                        View
-                      </Button>
+                      <Link href={`/cases/${caseItem.id}`}>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="mr-1 h-4 w-4" />
+                          View
+                        </Button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

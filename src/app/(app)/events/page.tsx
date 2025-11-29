@@ -28,6 +28,7 @@ import {
   Shield,
   Clock,
 } from 'lucide-react';
+import Link from 'next/link';
 
 // Mock events/outbreaks data
 const mockEvents = [
@@ -375,10 +376,12 @@ export default function EventsPage() {
                 </div>
               </div>
 
-              <Button variant="outline" className="w-full">
-                <Eye className="mr-2 h-4 w-4" />
-                View Details
-              </Button>
+              <Link href={`/events/${event.id}`}>
+                <Button variant="outline" className="w-full">
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Details
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ))}

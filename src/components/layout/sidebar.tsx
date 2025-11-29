@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
 import {
   LayoutDashboard,
@@ -18,6 +19,11 @@ import {
   Microscope,
   AlertTriangle,
   Zap,
+  LogOut,
+  User,
+  ChevronDown,
+  Shield,
+  HelpCircle,
 } from 'lucide-react';
 import { useTenantStore } from '@/lib/stores/tenant-store';
 
@@ -48,7 +54,9 @@ const configuration = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { currentTenant, currentUser } = useTenantStore();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === href;
@@ -58,6 +66,11 @@ export function Sidebar() {
   const canAccessConfig =
     currentUser?.role === 'global_admin' ||
     currentUser?.role === 'country_admin';
+
+  const handleSignOut = () => {
+    // In production, this would clear auth tokens and redirect to login
+    router.push('/auth/login');
+  };
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-sidebar">
@@ -167,21 +180,89 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* User Info */}
+      {/* User Profile Section */}
       {currentUser && (
-        <div className="border-t border-border p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 text-sm font-medium text-primary-foreground">
-              {currentUser.full_name?.[0] || 'U'}
-            </div>
-            <div className="flex-1 truncate">
-              <p className="truncate text-sm font-medium text-foreground">
-                {currentUser.full_name}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {currentUser.role.replace('_', ' ')}
-              </p>
-            </div>
+        <div className="border-t border-border">
+          {/* User Menu Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex w-full items-center gap-3 p-4 transition-colors hover:bg-accent"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/60 text-sm font-medium text-primary-foreground">
+                {currentUser.full_name?.[0] || 'U'}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {currentUser.full_name}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {currentUser.role.replace('_', ' ')}
+                </p>
+              </div>
+              <ChevronDown className={cn(
+                'h-4 w-4 text-muted-foreground transition-transform',
+                userMenuOpen && 'rotate-180'
+              )} />
+            </button>
+
+            {/* Dropdown Menu */}
+            {userMenuOpen && (
+              <div className="absolute bottom-full left-0 right-0 mb-1 animate-fade-in rounded-lg border border-border bg-popover p-2 shadow-xl">
+                <div className="mb-2 border-b border-border px-3 py-2">
+                  <p className="text-sm font-medium text-foreground">{currentUser.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{currentUser.email || 'user@ncdc.gov.ng'}</p>
+                </div>
+
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  View Profile
+                </Link>
+
+                <Link
+                  href="/configuration/settings"
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  <Settings className="h-4 w-4 text-muted-foreground" />
+                  Settings
+                </Link>
+
+                {canAccessConfig && (
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    Admin Panel
+                  </Link>
+                )}
+
+                <Link
+                  href="/help"
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                  Help & Support
+                </Link>
+
+                <div className="mt-2 border-t border-border pt-2">
+                  <button
+                    onClick={handleSignOut}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
