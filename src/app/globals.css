@@ -139,14 +139,32 @@
 
 html {
   color-scheme: dark;
+  background-color: #030014 !important;
 }
 
 body {
-  background: linear-gradient(135deg, rgb(3, 0, 20) 0%, rgb(10, 5, 30) 50%, rgb(3, 0, 20) 100%);
-  background-attachment: fixed;
-  color: rgb(248, 250, 252);
+  background: #030014 !important;
+  background-color: #030014 !important;
+  background-image: linear-gradient(135deg, rgb(3, 0, 20) 0%, rgb(10, 5, 30) 50%, rgb(3, 0, 20) 100%) !important;
+  background-attachment: fixed !important;
+  color: rgb(248, 250, 252) !important;
   font-family: var(--font-sans);
   min-height: 100vh;
+}
+
+/* Force dark background on all root elements */
+html, body, #__next, main {
+  background-color: #030014 !important;
+}
+
+/* Override any white backgrounds */
+*, *::before, *::after {
+  --tw-bg-opacity: 1;
+}
+
+/* Prevent any white flash */
+html:not(.dark) {
+  background-color: #030014 !important;
 }
 
 /* ===== AI GRID BACKGROUND ===== */
