@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,24 @@ import {
   BarChart3,
 } from 'lucide-react';
 import Link from 'next/link';
+
+// Dynamically import map to avoid SSR issues
+const CaseTrackingMap = dynamic(
+  () => import('@/components/dashboard/CaseTrackingMap').then((mod) => mod.CaseTrackingMap),
+  {
+    ssr: false,
+    loading: () => (
+      <Card className="border-white/10 bg-[#0a0820]/80 backdrop-blur-xl">
+        <CardContent className="flex h-[500px] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+            <p className="text-sm text-slate-400">Loading map...</p>
+          </div>
+        </CardContent>
+      </Card>
+    ),
+  }
+);
 import {
   AreaChart,
   Area,
@@ -378,6 +397,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Case Tracking Map */}
+      <CaseTrackingMap />
 
       {/* Disease Bar Chart + Alerts */}
       <div className="grid gap-6 lg:grid-cols-2">

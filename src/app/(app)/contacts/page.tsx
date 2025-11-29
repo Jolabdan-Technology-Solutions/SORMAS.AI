@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   Card,
   CardContent,
@@ -27,7 +28,31 @@ import {
   UserX,
   Clock,
   Plus,
+  Network,
+  GitBranch,
+  Map,
+  List,
 } from 'lucide-react';
+import { ContactNetworkDiagram } from '@/components/contacts/ContactNetworkDiagram';
+import { ContactTracingTimeline } from '@/components/contacts/ContactTracingTimeline';
+
+// Dynamically import map to avoid SSR issues
+const FollowUpMap = dynamic(
+  () => import('@/components/contacts/FollowUpMap').then((mod) => mod.FollowUpMap),
+  {
+    ssr: false,
+    loading: () => (
+      <Card className="border-white/10 bg-[#0a0820]/80 backdrop-blur-xl">
+        <CardContent className="flex h-[500px] items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+            <p className="text-sm text-slate-400">Loading map...</p>
+          </div>
+        </CardContent>
+      </Card>
+    ),
+  }
+);
 
 // Mock contacts data
 const mockContacts = [
@@ -142,11 +167,14 @@ const followUpStatuses = ['All Statuses', 'under_follow_up', 'completed', 'lost_
 const riskLevels = ['All Risk Levels', 'high', 'medium', 'low'];
 const contactTypes = ['All Types', 'household', 'workplace', 'healthcare', 'community', 'other'];
 
+type ViewTab = 'list' | 'network' | 'timeline' | 'map';
+
 export default function ContactsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
   const [selectedRisk, setSelectedRisk] = useState('All Risk Levels');
   const [selectedType, setSelectedType] = useState('All Types');
+  const [activeTab, setActiveTab] = useState<ViewTab>('list');
 
   const filteredContacts = mockContacts.filter((c) => {
     if (selectedStatus !== 'All Statuses' && c.follow_up_status !== selectedStatus) return false;
@@ -198,6 +226,13 @@ export default function ContactsPage() {
     lost: mockContacts.filter((c) => c.follow_up_status === 'lost_to_follow_up').length,
     converted: mockContacts.filter((c) => c.follow_up_status === 'converted_to_case').length,
   };
+
+  const tabs = [
+    { id: 'list' as const, label: 'Contact List', icon: List },
+    { id: 'network' as const, label: 'Network Diagram', icon: Network },
+    { id: 'timeline' as const, label: 'Tracing Timeline', icon: GitBranch },
+    { id: 'map' as const, label: 'Follow-up Map', icon: Map },
+  ];
 
   return (
     <div className="space-y-6">
@@ -277,182 +312,214 @@ export default function ContactsPage() {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search by ID, name, or location..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+      {/* View Tabs */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-4">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 text-white border border-indigo-500/30'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'list' && (
+        <>
+          {/* Filters */}
+          <Card>
+            <CardContent className="py-4">
+              <div className="flex flex-wrap gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by ID, name, or location..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <Select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-48"
+                >
+                  {followUpStatuses.map((s) => (
+                    <option key={s} value={s}>
+                      {s === 'All Statuses' ? s : s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  value={selectedRisk}
+                  onChange={(e) => setSelectedRisk(e.target.value)}
+                  className="w-40"
+                >
+                  {riskLevels.map((r) => (
+                    <option key={r} value={r}>
+                      {r === 'All Risk Levels' ? r : r.charAt(0).toUpperCase() + r.slice(1)}
+                    </option>
+                  ))}
+                </Select>
+                <Select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="w-40"
+                >
+                  {contactTypes.map((t) => (
+                    <option key={t} value={t}>
+                      {t === 'All Types' ? t : t.charAt(0).toUpperCase() + t.slice(1)}
+                    </option>
+                  ))}
+                </Select>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  More Filters
+                </Button>
               </div>
-            </div>
-            <Select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-48"
-            >
-              {followUpStatuses.map((s) => (
-                <option key={s} value={s}>
-                  {s === 'All Statuses' ? s : s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </option>
-              ))}
-            </Select>
-            <Select
-              value={selectedRisk}
-              onChange={(e) => setSelectedRisk(e.target.value)}
-              className="w-40"
-            >
-              {riskLevels.map((r) => (
-                <option key={r} value={r}>
-                  {r === 'All Risk Levels' ? r : r.charAt(0).toUpperCase() + r.slice(1)}
-                </option>
-              ))}
-            </Select>
-            <Select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-40"
-            >
-              {contactTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t === 'All Types' ? t : t.charAt(0).toUpperCase() + t.slice(1)}
-                </option>
-              ))}
-            </Select>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" />
-              More Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Contacts Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-border bg-muted/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Contact ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Person
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Linked Case
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Risk Level
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Follow-up Progress
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredContacts.map((contact) => (
-                  <tr key={contact.id} className="transition-colors hover:bg-muted/50">
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <span className="font-mono text-sm text-primary">
-                        {contact.external_id}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {contact.person.first_name} {contact.person.last_name}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{contact.person.age_years} yrs, {contact.person.sex}</span>
-                          <span className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {contact.person.phone}
+          {/* Contacts Table */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="border-b border-border bg-muted/50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Contact ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Person
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Linked Case
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Risk Level
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Follow-up Progress
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Location
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredContacts.map((contact) => (
+                      <tr key={contact.id} className="transition-colors hover:bg-muted/50">
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span className="font-mono text-sm text-primary">
+                            {contact.external_id}
                           </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <Link href={`/cases/${contact.case_id}`} className="font-mono text-sm text-primary hover:underline">
-                        {contact.case_id}
-                      </Link>
-                      <p className="text-xs text-muted-foreground capitalize">{contact.relationship_to_case}</p>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      {getRiskBadge(contact.risk_level)}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      {getStatusBadge(contact.follow_up_status)}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full bg-primary transition-all"
-                            style={{
-                              width: `${(contact.visits_completed / (contact.visits_completed + contact.visits_remaining)) * 100}%`,
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {contact.visits_completed}/{contact.visits_completed + contact.visits_remaining}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        {contact.admin_unit}
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <Link href={`/contacts/${contact.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="mr-1 h-4 w-4" />
-                          View
-                        </Button>
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div>
+                            <p className="font-medium text-foreground">
+                              {contact.person.first_name} {contact.person.last_name}
+                            </p>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>{contact.person.age_years} yrs, {contact.person.sex}</span>
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {contact.person.phone}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Link href={`/cases/${contact.case_id}`} className="font-mono text-sm text-primary hover:underline">
+                            {contact.case_id}
+                          </Link>
+                          <p className="text-xs text-muted-foreground capitalize">{contact.relationship_to_case}</p>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          {getRiskBadge(contact.risk_level)}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          {getStatusBadge(contact.follow_up_status)}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-24 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full bg-primary transition-all"
+                                style={{
+                                  width: `${(contact.visits_completed / (contact.visits_completed + contact.visits_remaining)) * 100}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {contact.visits_completed}/{contact.visits_completed + contact.visits_remaining}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            {contact.admin_unit}
+                          </div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <Link href={`/contacts/${contact.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="mr-1 h-4 w-4" />
+                              View
+                            </Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-border px-6 py-4">
-            <p className="text-sm text-muted-foreground">
-              Showing 1 to {filteredContacts.length} of {filteredContacts.length} results
-            </p>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                <ChevronLeft className="h-4 w-4" />
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              {/* Pagination */}
+              <div className="flex items-center justify-between border-t border-border px-6 py-4">
+                <p className="text-sm text-muted-foreground">
+                  Showing 1 to {filteredContacts.length} of {filteredContacts.length} results
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" disabled>
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button variant="outline" size="sm" disabled>
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {activeTab === 'network' && <ContactNetworkDiagram />}
+
+      {activeTab === 'timeline' && <ContactTracingTimeline />}
+
+      {activeTab === 'map' && <FollowUpMap />}
     </div>
   );
 }
