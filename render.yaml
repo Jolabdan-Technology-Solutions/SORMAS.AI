@@ -1,0 +1,65 @@
+# SORMAS AI - Render Blueprint
+# This file defines the infrastructure for deploying on Render
+# https://render.com/docs/blueprint-spec
+
+services:
+  # ================================================
+  # FRONTEND + API (Next.js Full Stack)
+  # ================================================
+  - type: web
+    name: sormas-ai
+    runtime: node
+    region: oregon # or frankfurt for EU
+    plan: starter # free tier available
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false # Set manually in Render dashboard
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        fromService:
+          type: web
+          name: sormas-ai
+          property: host
+    autoDeploy: true # Auto-deploy on push to main
+
+  # ================================================
+  # BACKGROUND WORKER (ETL Jobs - Optional)
+  # For scheduled data sync jobs
+  # ================================================
+  # - type: worker
+  #   name: sormas-ai-etl-worker
+  #   runtime: node
+  #   plan: starter
+  #   buildCommand: npm ci
+  #   startCommand: npm run worker
+  #   envVars:
+  #     - key: NODE_ENV
+  #       value: production
+  #     - key: SUPABASE_URL
+  #       sync: false
+  #     - key: SUPABASE_SERVICE_ROLE_KEY
+  #       sync: false
+
+  # ================================================
+  # CRON JOB (Scheduled ETL - Optional)
+  # Runs data sync on schedule
+  # ================================================
+  # - type: cron
+  #   name: sormas-ai-etl-sync
+  #   runtime: node
+  #   schedule: "0 */6 * * *" # Every 6 hours
+  #   buildCommand: npm ci
+  #   startCommand: npm run etl:sync
+  #   envVars:
+  #     - key: SUPABASE_URL
+  #       sync: false
+  #     - key: SUPABASE_SERVICE_ROLE_KEY
+  #       sync: false
