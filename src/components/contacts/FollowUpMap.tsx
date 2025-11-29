@@ -1,24 +1,41 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import Map, { Marker, Popup, NavigationControl, Source, Layer } from 'react-map-gl';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   MapPin,
   Navigation,
-  Layers,
   Filter,
   User,
   Calendar,
   Phone,
   AlertTriangle,
 } from 'lucide-react';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import dynamic from 'next/dynamic';
 
-// Mapbox public token - you should use your own token in production
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+// Dynamically import Leaflet components with SSR disabled
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
+const CircleMarker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.CircleMarker),
+  { ssr: false }
+);
 
 interface ContactLocation {
   id: string;
@@ -147,14 +164,13 @@ const getStatusLabel = (status: string) => {
 };
 
 export function FollowUpMap() {
-  const [viewState, setViewState] = useState({
-    latitude: 6.5244,
-    longitude: 3.3792,
-    zoom: 11,
-  });
-  const [selectedContact, setSelectedContact] = useState<ContactLocation | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const [filter, setFilter] = useState<string>('all');
-  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
+  const [selectedContact, setSelectedContact] = useState<ContactLocation | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const filteredContacts = mockContactLocations.filter((contact) => {
     if (filter === 'all') return true;
@@ -180,22 +196,6 @@ export function FollowUpMap() {
               <CardTitle className="text-white">Follow-up Map</CardTitle>
               <p className="text-sm text-slate-400">Real-time contact locations and visit status</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={mapStyle.includes('dark') ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMapStyle('mapbox://styles/mapbox/dark-v11')}
-            >
-              Dark
-            </Button>
-            <Button
-              variant={mapStyle.includes('satellite') ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMapStyle('mapbox://styles/mapbox/satellite-streets-v12')}
-            >
-              Satellite
-            </Button>
           </div>
         </div>
       </CardHeader>
@@ -254,131 +254,93 @@ export function FollowUpMap() {
 
         {/* Map */}
         <div className="relative h-[500px]">
-          <Map
-            {...viewState}
-            onMove={(evt) => setViewState(evt.viewState)}
-            mapStyle={mapStyle}
-            mapboxAccessToken={MAPBOX_TOKEN}
-            style={{ width: '100%', height: '100%' }}
-          >
-            <NavigationControl position="top-right" />
-
-            {/* Markers */}
-            {filteredContacts.map((contact) => (
-              <Marker
-                key={contact.id}
-                latitude={contact.lat}
-                longitude={contact.lng}
-                anchor="bottom"
-                onClick={(e) => {
-                  e.originalEvent.stopPropagation();
-                  setSelectedContact(contact);
-                }}
-              >
-                <div
-                  className="relative cursor-pointer transition-transform hover:scale-110"
-                  style={{ transform: selectedContact?.id === contact.id ? 'scale(1.2)' : 'scale(1)' }}
+          {isClient ? (
+            <MapContainer
+              center={[6.5244, 3.3792]}
+              zoom={11}
+              style={{ width: '100%', height: '100%', background: '#0a0820' }}
+              zoomControl={true}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
+              {filteredContacts.map((contact) => (
+                <CircleMarker
+                  key={contact.id}
+                  center={[contact.lat, contact.lng]}
+                  radius={12}
+                  pathOptions={{
+                    color: getMarkerColor(contact.status),
+                    fillColor: getMarkerColor(contact.status),
+                    fillOpacity: 0.8,
+                    weight: contact.status === 'pending' || contact.status === 'symptomatic' ? 3 : 2,
+                  }}
+                  eventHandlers={{
+                    click: () => setSelectedContact(contact),
+                  }}
                 >
-                  {/* Pulse animation for pending/symptomatic */}
-                  {(contact.status === 'pending' || contact.status === 'symptomatic') && (
-                    <div
-                      className="absolute -inset-2 animate-ping rounded-full opacity-30"
-                      style={{ backgroundColor: getMarkerColor(contact.status) }}
-                    />
-                  )}
-                  {/* Marker */}
-                  <div
-                    className="relative flex h-8 w-8 items-center justify-center rounded-full shadow-lg"
-                    style={{
-                      backgroundColor: getMarkerColor(contact.status),
-                      boxShadow: `0 0 20px ${getMarkerColor(contact.status)}80`,
-                    }}
-                  >
-                    <User className="h-4 w-4 text-white" />
-                  </div>
-                  {/* Risk indicator */}
-                  {contact.riskLevel === 'high' && (
-                    <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500">
-                      <AlertTriangle className="h-2.5 w-2.5 text-white" />
+                  <Popup>
+                    <div className="min-w-[220px] text-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{contact.name}</h3>
+                          {contact.riskLevel === 'high' && (
+                            <AlertTriangle className="h-3 w-3 text-red-500" />
+                          )}
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          contact.status === 'visited' ? 'bg-green-100 text-green-700' :
+                          contact.status === 'missed' ? 'bg-red-100 text-red-700' :
+                          contact.status === 'symptomatic' ? 'bg-orange-100 text-orange-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {getStatusLabel(contact.status)}
+                        </span>
+                      </div>
+                      <p className="text-gray-500 text-xs mb-2">{contact.id}</p>
+                      <div className="space-y-1 text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3 w-3" />
+                          <span>{contact.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>Last: {contact.lastVisit}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Navigation className="h-3 w-3" />
+                          <span>Next: {contact.nextVisit}</span>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                          <span>Follow-up Progress</span>
+                          <span>{contact.visitNumber}/{contact.totalVisits}</span>
+                        </div>
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 rounded-full"
+                            style={{ width: `${(contact.visitNumber / contact.totalVisits) * 100}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </Marker>
-            ))}
-
-            {/* Popup */}
-            {selectedContact && (
-              <Popup
-                latitude={selectedContact.lat}
-                longitude={selectedContact.lng}
-                anchor="top"
-                onClose={() => setSelectedContact(null)}
-                closeButton={true}
-                closeOnClick={false}
-                className="contact-popup"
-              >
-                <div className="w-64 rounded-lg bg-[#0a0820] p-4 text-white">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-white">{selectedContact.name}</h3>
-                      <p className="text-xs text-slate-400">{selectedContact.id}</p>
-                    </div>
-                    <Badge
-                      variant={
-                        selectedContact.status === 'visited'
-                          ? 'success'
-                          : selectedContact.status === 'missed' || selectedContact.status === 'symptomatic'
-                          ? 'destructive'
-                          : 'warning'
-                      }
-                    >
-                      {getStatusLabel(selectedContact.status)}
-                    </Badge>
-                  </div>
-
-                  <div className="mt-3 space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="text-slate-300">{selectedContact.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="text-slate-300">Last: {selectedContact.lastVisit}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Navigation className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="text-slate-300">Next: {selectedContact.nextVisit}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span>Follow-up Progress</span>
-                      <span>{selectedContact.visitNumber}/{selectedContact.totalVisits}</span>
-                    </div>
-                    <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                        style={{ width: `${(selectedContact.visitNumber / selectedContact.totalVisits) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex gap-2">
-                    <Button size="sm" className="flex-1 h-8 text-xs">
-                      Start Visit
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-8 text-xs">
-                      Navigate
-                    </Button>
-                  </div>
-                </div>
-              </Popup>
-            )}
-          </Map>
+                  </Popup>
+                </CircleMarker>
+              ))}
+            </MapContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center bg-[#0a0820]">
+              <div className="text-center">
+                <MapPin className="h-12 w-12 text-emerald-500/50 mx-auto mb-2 animate-pulse" />
+                <p className="text-slate-400 text-sm">Loading map...</p>
+              </div>
+            </div>
+          )}
 
           {/* Stats Overlay */}
-          <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-[#0a0820]/90 p-3 backdrop-blur-xl">
+          <div className="absolute bottom-4 left-4 z-[1000] rounded-xl border border-white/10 bg-[#0a0820]/90 p-3 backdrop-blur-xl">
             <p className="text-xs font-medium text-slate-400 mb-2">Today&apos;s Summary</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -397,6 +359,27 @@ export function FollowUpMap() {
                 <p className="text-lg font-bold text-orange-400">{statusCounts.symptomatic}</p>
                 <p className="text-xs text-slate-500">Symptomatic</p>
               </div>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="absolute bottom-4 right-4 z-[1000] rounded-xl border border-white/10 bg-[#0a0820]/90 p-3 backdrop-blur-xl">
+            <p className="text-xs font-medium text-slate-400 mb-2">Status</p>
+            <div className="space-y-1.5">
+              {[
+                { label: 'Pending', color: '#eab308' },
+                { label: 'Visited', color: '#22c55e' },
+                { label: 'Missed', color: '#ef4444' },
+                { label: 'Symptomatic', color: '#f97316' },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <div
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-xs text-slate-400">{item.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

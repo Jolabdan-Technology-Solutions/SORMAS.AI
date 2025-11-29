@@ -98,6 +98,7 @@ interface ClassificationData {
   name: string;
   value: number;
   color: string;
+  [key: string]: string | number;
 }
 
 interface Alert {
@@ -384,7 +385,13 @@ export default function DashboardPage() {
         .order('start_date', { ascending: false })
         .limit(3);
 
-      setActiveOutbreaks(outbreaksData || []);
+      // Transform outbreaks data
+      const transformedOutbreaks = (outbreaksData || []).map((row: any) => ({
+        ...row,
+        disease: Array.isArray(row.disease) ? row.disease[0] || null : row.disease,
+        admin_unit: Array.isArray(row.admin_unit) ? row.admin_unit[0] || null : row.admin_unit,
+      })) as Outbreak[];
+      setActiveOutbreaks(transformedOutbreaks);
 
       // Fetch data integration status
       const { data: lastEtlJob } = await supabase

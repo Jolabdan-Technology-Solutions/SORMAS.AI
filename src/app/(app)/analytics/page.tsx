@@ -9,7 +9,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   BarChart3,
@@ -204,39 +204,42 @@ export default function AnalyticsPage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex flex-wrap gap-4">
-            <Select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="w-48"
-            >
-              <option value="last7days">Last 7 Days</option>
-              <option value="last30days">Last 30 Days</option>
-              <option value="last90days">Last 90 Days</option>
-              <option value="thisYear">This Year</option>
-              <option value="custom">Custom Range</option>
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Date Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="last7days">Last 7 Days</SelectItem>
+                <SelectItem value="last30days">Last 30 Days</SelectItem>
+                <SelectItem value="last90days">Last 90 Days</SelectItem>
+                <SelectItem value="thisYear">This Year</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
             </Select>
-            <Select
-              value={selectedDisease}
-              onChange={(e) => setSelectedDisease(e.target.value)}
-              className="w-48"
-            >
-              <option value="all">All Diseases</option>
-              <option value="cholera">Cholera</option>
-              <option value="malaria">Malaria</option>
-              <option value="covid19">COVID-19</option>
-              <option value="measles">Measles</option>
-              <option value="lassa">Lassa Fever</option>
+            <Select value={selectedDisease} onValueChange={setSelectedDisease}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Disease" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Diseases</SelectItem>
+                <SelectItem value="cholera">Cholera</SelectItem>
+                <SelectItem value="malaria">Malaria</SelectItem>
+                <SelectItem value="covid19">COVID-19</SelectItem>
+                <SelectItem value="measles">Measles</SelectItem>
+                <SelectItem value="lassa">Lassa Fever</SelectItem>
+              </SelectContent>
             </Select>
-            <Select
-              value={selectedRegion}
-              onChange={(e) => setSelectedRegion(e.target.value)}
-              className="w-48"
-            >
-              <option value="all">All Regions</option>
-              <option value="lagos">Lagos</option>
-              <option value="kano">Kano</option>
-              <option value="rivers">Rivers</option>
-              <option value="oyo">Oyo</option>
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Regions</SelectItem>
+                <SelectItem value="lagos">Lagos</SelectItem>
+                <SelectItem value="kano">Kano</SelectItem>
+                <SelectItem value="rivers">Rivers</SelectItem>
+                <SelectItem value="oyo">Oyo</SelectItem>
+              </SelectContent>
             </Select>
             <Button variant="outline">
               <Filter className="mr-2 h-4 w-4" />

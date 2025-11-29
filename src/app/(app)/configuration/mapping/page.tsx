@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   ArrowRight,
@@ -120,15 +120,16 @@ export default function MappingPage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex gap-4">
-            <Select
-              value={selectedSource}
-              onChange={(e) => setSelectedSource(e.target.value)}
-              className="w-48"
-            >
-              <option value="all">All Sources</option>
-              <option value="DHIS2">DHIS2</option>
-              <option value="CSV Import">CSV Import</option>
-              <option value="API">API</option>
+            <Select value={selectedSource} onValueChange={setSelectedSource}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                <SelectItem value="DHIS2">DHIS2</SelectItem>
+                <SelectItem value="CSV Import">CSV Import</SelectItem>
+                <SelectItem value="API">API</SelectItem>
+              </SelectContent>
             </Select>
           </div>
         </CardContent>

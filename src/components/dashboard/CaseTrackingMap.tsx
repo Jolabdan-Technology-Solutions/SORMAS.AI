@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import Map, { Marker, Popup, NavigationControl, Source, Layer } from 'react-map-gl';
-import type { CircleLayer, FillLayer } from 'mapbox-gl';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,11 +10,33 @@ import {
   Activity,
   AlertTriangle,
   TrendingUp,
+  TrendingDown,
+  Minus,
   Eye,
 } from 'lucide-react';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import dynamic from 'next/dynamic';
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw';
+// Dynamically import Leaflet components with SSR disabled
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
+const CircleMarker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.CircleMarker),
+  { ssr: false }
+);
 
 interface CaseLocation {
   id: string;
@@ -146,64 +166,27 @@ const getSeverityColor = (severity: string) => {
   }
 };
 
-const getMarkerSize = (cases: number) => {
-  if (cases > 400) return 40;
-  if (cases > 200) return 32;
-  if (cases > 100) return 26;
-  return 20;
+const getMarkerRadius = (cases: number) => {
+  if (cases > 400) return 25;
+  if (cases > 200) return 20;
+  if (cases > 100) return 15;
+  return 10;
+};
+
+const TrendIcon = ({ trend }: { trend: string }) => {
+  if (trend === 'increasing') return <TrendingUp className="h-3 w-3 text-red-400" />;
+  if (trend === 'decreasing') return <TrendingDown className="h-3 w-3 text-green-400" />;
+  return <Minus className="h-3 w-3 text-slate-400" />;
 };
 
 export function CaseTrackingMap() {
-  const [viewState, setViewState] = useState({
-    latitude: 9.0820,
-    longitude: 8.6753,
-    zoom: 5.5,
-  });
-  const [selectedCase, setSelectedCase] = useState<CaseLocation | null>(null);
-  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
+  const [isClient, setIsClient] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [selectedCase, setSelectedCase] = useState<CaseLocation | null>(null);
 
-  // GeoJSON for heatmap
-  const heatmapData = useMemo(() => ({
-    type: 'FeatureCollection' as const,
-    features: mockCaseData.map((loc) => ({
-      type: 'Feature' as const,
-      properties: {
-        cases: loc.cases,
-        severity: loc.severity,
-      },
-      geometry: {
-        type: 'Point' as const,
-        coordinates: [loc.lng, loc.lat],
-      },
-    })),
-  }), []);
-
-  const heatmapLayer: CircleLayer = {
-    id: 'cases-heat',
-    type: 'circle',
-    paint: {
-      'circle-radius': [
-        'interpolate',
-        ['linear'],
-        ['get', 'cases'],
-        0, 10,
-        100, 20,
-        500, 40,
-      ],
-      'circle-color': [
-        'interpolate',
-        ['linear'],
-        ['get', 'cases'],
-        0, '#22c55e',
-        100, '#eab308',
-        300, '#f97316',
-        500, '#ef4444',
-      ],
-      'circle-opacity': 0.6,
-      'circle-blur': 0.5,
-    },
-  };
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const totalCases = mockCaseData.reduce((acc, loc) => acc + loc.cases, 0);
   const totalDeaths = mockCaseData.reduce((acc, loc) => acc + loc.deaths, 0);
@@ -229,20 +212,7 @@ export function CaseTrackingMap() {
               onClick={() => setShowHeatmap(!showHeatmap)}
             >
               <Layers className="mr-2 h-4 w-4" />
-              Heatmap
-            </Button>
-            <Button
-              variant={mapStyle.includes('satellite') ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() =>
-                setMapStyle(
-                  mapStyle.includes('dark')
-                    ? 'mapbox://styles/mapbox/satellite-streets-v12'
-                    : 'mapbox://styles/mapbox/dark-v11'
-                )
-              }
-            >
-              Satellite
+              {showHeatmap ? 'Markers' : 'Heatmap'}
             </Button>
           </div>
         </div>
@@ -270,131 +240,74 @@ export function CaseTrackingMap() {
 
         {/* Map */}
         <div className="relative h-[400px]">
-          <Map
-            {...viewState}
-            onMove={(evt) => setViewState(evt.viewState)}
-            mapStyle={mapStyle}
-            mapboxAccessToken={MAPBOX_TOKEN}
-            style={{ width: '100%', height: '100%' }}
-          >
-            <NavigationControl position="top-right" />
-
-            {/* Heatmap Layer */}
-            {showHeatmap && (
-              <Source id="cases" type="geojson" data={heatmapData}>
-                <Layer {...heatmapLayer} />
-              </Source>
-            )}
-
-            {/* Markers */}
-            {!showHeatmap &&
-              mockCaseData.map((loc) => (
-                <Marker
+          {isClient ? (
+            <MapContainer
+              center={[9.0820, 8.6753]}
+              zoom={6}
+              style={{ width: '100%', height: '100%', background: '#0a0820' }}
+              zoomControl={true}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              />
+              {mockCaseData.map((loc) => (
+                <CircleMarker
                   key={loc.id}
-                  latitude={loc.lat}
-                  longitude={loc.lng}
-                  anchor="center"
-                  onClick={(e) => {
-                    e.originalEvent.stopPropagation();
-                    setSelectedCase(loc);
+                  center={[loc.lat, loc.lng]}
+                  radius={getMarkerRadius(loc.cases)}
+                  pathOptions={{
+                    color: getSeverityColor(loc.severity),
+                    fillColor: getSeverityColor(loc.severity),
+                    fillOpacity: 0.7,
+                    weight: 2,
+                  }}
+                  eventHandlers={{
+                    click: () => setSelectedCase(loc),
                   }}
                 >
-                  <div
-                    className="relative cursor-pointer transition-transform hover:scale-110"
-                    style={{ transform: selectedCase?.id === loc.id ? 'scale(1.2)' : 'scale(1)' }}
-                  >
-                    {/* Pulse for critical */}
-                    {loc.severity === 'critical' && (
-                      <div
-                        className="absolute inset-0 animate-ping rounded-full opacity-40"
-                        style={{
-                          backgroundColor: getSeverityColor(loc.severity),
-                          width: getMarkerSize(loc.cases),
-                          height: getMarkerSize(loc.cases),
-                        }}
-                      />
-                    )}
-                    {/* Marker circle */}
-                    <div
-                      className="relative flex items-center justify-center rounded-full shadow-lg"
-                      style={{
-                        backgroundColor: getSeverityColor(loc.severity),
-                        width: getMarkerSize(loc.cases),
-                        height: getMarkerSize(loc.cases),
-                        boxShadow: `0 0 20px ${getSeverityColor(loc.severity)}80`,
-                      }}
-                    >
-                      <span className="text-xs font-bold text-white">{loc.cases}</span>
-                    </div>
-                    {/* Trend indicator */}
-                    {loc.trend === 'increasing' && (
-                      <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500">
-                        <TrendingUp className="h-2.5 w-2.5 text-white" />
+                  <Popup>
+                    <div className="min-w-[200px] text-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold">{loc.disease}</h3>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          loc.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                          loc.severity === 'high' ? 'bg-orange-100 text-orange-700' :
+                          loc.severity === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {loc.severity}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                </Marker>
+                      <p className="text-gray-600">{loc.region} State</p>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div className="text-center p-1 bg-gray-100 rounded">
+                          <p className="font-bold">{loc.cases}</p>
+                          <p className="text-xs text-gray-500">Cases</p>
+                        </div>
+                        <div className="text-center p-1 bg-red-50 rounded">
+                          <p className="font-bold text-red-600">{loc.deaths}</p>
+                          <p className="text-xs text-gray-500">Deaths</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Trend: {loc.trend}</p>
+                      <p className="text-xs text-gray-400">Updated: {loc.lastUpdated}</p>
+                    </div>
+                  </Popup>
+                </CircleMarker>
               ))}
-
-            {/* Popup */}
-            {selectedCase && (
-              <Popup
-                latitude={selectedCase.lat}
-                longitude={selectedCase.lng}
-                anchor="top"
-                onClose={() => setSelectedCase(null)}
-                closeButton={true}
-                closeOnClick={false}
-              >
-                <div className="w-64 rounded-lg bg-[#0a0820] p-4 text-white">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-white">{selectedCase.disease}</h3>
-                      <p className="text-xs text-slate-400">{selectedCase.region} State</p>
-                    </div>
-                    <Badge
-                      variant={
-                        selectedCase.severity === 'critical' || selectedCase.severity === 'high'
-                          ? 'destructive'
-                          : selectedCase.severity === 'medium'
-                          ? 'warning'
-                          : 'success'
-                      }
-                    >
-                      {selectedCase.severity}
-                    </Badge>
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div className="rounded-lg bg-white/5 p-2 text-center">
-                      <p className="text-lg font-bold text-white">{selectedCase.cases}</p>
-                      <p className="text-xs text-slate-400">Cases</p>
-                    </div>
-                    <div className="rounded-lg bg-white/5 p-2 text-center">
-                      <p className="text-lg font-bold text-red-400">{selectedCase.deaths}</p>
-                      <p className="text-xs text-slate-400">Deaths</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-slate-400" />
-                      <span className="text-sm capitalize text-slate-300">{selectedCase.trend}</span>
-                    </div>
-                    <span className="text-xs text-slate-500">Updated: {selectedCase.lastUpdated}</span>
-                  </div>
-
-                  <Button size="sm" className="mt-3 w-full h-8 text-xs">
-                    <Eye className="mr-2 h-3 w-3" />
-                    View Details
-                  </Button>
-                </div>
-              </Popup>
-            )}
-          </Map>
+            </MapContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center bg-[#0a0820]">
+              <div className="text-center">
+                <MapPin className="h-12 w-12 text-indigo-500/50 mx-auto mb-2 animate-pulse" />
+                <p className="text-slate-400 text-sm">Loading map...</p>
+              </div>
+            </div>
+          )}
 
           {/* Legend */}
-          <div className="absolute bottom-4 left-4 rounded-xl border border-white/10 bg-[#0a0820]/90 p-3 backdrop-blur-xl">
+          <div className="absolute bottom-4 left-4 z-[1000] rounded-xl border border-white/10 bg-[#0a0820]/90 p-3 backdrop-blur-xl">
             <p className="text-xs font-medium text-slate-400 mb-2">Severity</p>
             <div className="space-y-1.5">
               {[
@@ -416,7 +329,7 @@ export function CaseTrackingMap() {
 
           {/* Critical Alert */}
           {criticalOutbreaks > 0 && (
-            <div className="absolute right-4 top-4 flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 backdrop-blur-xl">
+            <div className="absolute right-4 top-4 z-[1000] flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 backdrop-blur-xl">
               <AlertTriangle className="h-4 w-4 text-red-400 animate-pulse" />
               <span className="text-xs font-medium text-red-400">
                 {criticalOutbreaks} Critical Outbreak{criticalOutbreaks > 1 ? 's' : ''}

@@ -181,7 +181,15 @@ export default function CasesPage() {
 
       if (error) throw error;
 
-      setCases(data || []);
+      // Transform data to match Case interface (Supabase returns objects for singular relations)
+      const transformedData = (data || []).map((row: any) => ({
+        ...row,
+        person: Array.isArray(row.person) ? row.person[0] || null : row.person,
+        disease: Array.isArray(row.disease) ? row.disease[0] || null : row.disease,
+        admin_unit: Array.isArray(row.admin_unit) ? row.admin_unit[0] || null : row.admin_unit,
+      })) as Case[];
+
+      setCases(transformedData);
       setPagination((prev) => ({
         ...prev,
         total: count || 0,

@@ -9,7 +9,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   Zap,
@@ -292,26 +292,28 @@ export default function PredictionsPage() {
       <Card>
         <CardContent className="py-4">
           <div className="flex flex-wrap gap-4">
-            <Select
-              value={selectedDisease}
-              onChange={(e) => setSelectedDisease(e.target.value)}
-              className="w-48"
-            >
-              <option value="all">All Diseases</option>
-              <option value="cholera">Cholera</option>
-              <option value="measles">Measles</option>
-              <option value="lassa">Lassa Fever</option>
-              <option value="malaria">Malaria</option>
+            <Select value={selectedDisease} onValueChange={setSelectedDisease}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Disease" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Diseases</SelectItem>
+                <SelectItem value="cholera">Cholera</SelectItem>
+                <SelectItem value="measles">Measles</SelectItem>
+                <SelectItem value="lassa">Lassa Fever</SelectItem>
+                <SelectItem value="malaria">Malaria</SelectItem>
+              </SelectContent>
             </Select>
-            <Select
-              value={selectedTimeframe}
-              onChange={(e) => setSelectedTimeframe(e.target.value)}
-              className="w-48"
-            >
-              <option value="2weeks">2 Week Forecast</option>
-              <option value="4weeks">4 Week Forecast</option>
-              <option value="8weeks">8 Week Forecast</option>
-              <option value="12weeks">12 Week Forecast</option>
+            <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2weeks">2 Week Forecast</SelectItem>
+                <SelectItem value="4weeks">4 Week Forecast</SelectItem>
+                <SelectItem value="8weeks">8 Week Forecast</SelectItem>
+                <SelectItem value="12weeks">12 Week Forecast</SelectItem>
+              </SelectContent>
             </Select>
           </div>
         </CardContent>

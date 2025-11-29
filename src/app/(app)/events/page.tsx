@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
   Search,
@@ -21,129 +21,125 @@ import {
   AlertTriangle,
   Calendar,
   MapPin,
-  Users,
   Activity,
   Plus,
   Flame,
   Shield,
   Clock,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
-// Mock events/outbreaks data
-const mockEvents = [
-  {
-    id: '1',
-    external_id: 'EVT-2024-00012',
-    title: 'Cholera Outbreak - Lagos Mainland',
-    disease: 'Cholera',
-    event_type: 'outbreak',
-    status: 'ongoing',
-    start_date: '2024-01-10',
-    end_date: null,
-    admin_unit: 'Lagos - Lagos Mainland',
-    cases_count: 45,
-    deaths_count: 3,
-    contacts_count: 120,
-    risk_level: 'high',
-    description: 'Cluster of cholera cases linked to contaminated water source',
-    response_status: 'active',
-  },
-  {
-    id: '2',
-    external_id: 'EVT-2024-00011',
-    title: 'Measles Cluster - Kano Urban',
-    disease: 'Measles',
-    event_type: 'cluster',
-    status: 'ongoing',
-    start_date: '2024-01-08',
-    end_date: null,
-    admin_unit: 'Kano - Kano Municipal',
-    cases_count: 28,
-    deaths_count: 1,
-    contacts_count: 85,
-    risk_level: 'medium',
-    description: 'Measles cluster in unvaccinated community',
-    response_status: 'active',
-  },
-  {
-    id: '3',
-    external_id: 'EVT-2024-00010',
-    title: 'Lassa Fever - Edo State',
-    disease: 'Lassa Fever',
-    event_type: 'outbreak',
-    status: 'ongoing',
-    start_date: '2024-01-05',
-    end_date: null,
-    admin_unit: 'Edo - Esan North East',
-    cases_count: 12,
-    deaths_count: 2,
-    contacts_count: 45,
-    risk_level: 'high',
-    description: 'Annual Lassa fever season with increased cases',
-    response_status: 'active',
-  },
-  {
-    id: '4',
-    external_id: 'EVT-2024-00009',
-    title: 'Yellow Fever - Cross River',
-    disease: 'Yellow Fever',
-    event_type: 'suspected_outbreak',
-    status: 'under_investigation',
-    start_date: '2024-01-12',
-    end_date: null,
-    admin_unit: 'Cross River - Ogoja',
-    cases_count: 5,
-    deaths_count: 1,
-    contacts_count: 15,
-    risk_level: 'medium',
-    description: 'Suspected yellow fever cases under investigation',
-    response_status: 'investigating',
-  },
-  {
-    id: '5',
-    external_id: 'EVT-2023-00245',
-    title: 'COVID-19 Cluster - Abuja',
-    disease: 'COVID-19',
-    event_type: 'cluster',
-    status: 'closed',
-    start_date: '2023-12-15',
-    end_date: '2024-01-05',
-    admin_unit: 'FCT - Abuja Municipal',
-    cases_count: 35,
-    deaths_count: 0,
-    contacts_count: 110,
-    risk_level: 'low',
-    description: 'Workplace cluster successfully contained',
-    response_status: 'closed',
-  },
-];
+// Default tenant ID - should come from auth context in production
+const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
+
+interface Event {
+  id: string;
+  external_id: string;
+  name: string;
+  event_type: string;
+  status: string;
+  start_date: string;
+  end_date: string | null;
+  description: string | null;
+  total_cases: number;
+  total_deaths: number;
+  total_contacts: number;
+  risk_level: string | null;
+  disease: { name: string } | null;
+  admin_unit: { name: string } | null;
+}
 
 const statuses = ['All Statuses', 'ongoing', 'under_investigation', 'closed'];
 const eventTypes = ['All Types', 'outbreak', 'cluster', 'suspected_outbreak', 'surveillance_event'];
 const riskLevels = ['All Risk Levels', 'high', 'medium', 'low'];
 
 export default function EventsPage() {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All Statuses');
   const [selectedType, setSelectedType] = useState('All Types');
   const [selectedRisk, setSelectedRisk] = useState('All Risk Levels');
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 12;
 
-  const filteredEvents = mockEvents.filter((e) => {
-    if (selectedStatus !== 'All Statuses' && e.status !== selectedStatus) return false;
-    if (selectedType !== 'All Types' && e.event_type !== selectedType) return false;
-    if (selectedRisk !== 'All Risk Levels' && e.risk_level !== selectedRisk) return false;
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      return (
-        e.external_id.toLowerCase().includes(search) ||
-        e.title.toLowerCase().includes(search) ||
-        e.disease.toLowerCase().includes(search) ||
-        e.admin_unit.toLowerCase().includes(search)
-      );
+  const supabase = createClient();
+
+  const fetchEvents = async () => {
+    try {
+      let query = supabase
+        .from('events')
+        .select(`
+          id, external_id, name, event_type, status, start_date, end_date,
+          description, total_cases, total_deaths, total_contacts, risk_level,
+          disease:diseases(name),
+          admin_unit:admin_units(name)
+        `, { count: 'exact' })
+        .eq('tenant_id', DEFAULT_TENANT_ID)
+        .order('start_date', { ascending: false });
+
+      // Apply filters
+      if (selectedStatus !== 'All Statuses') {
+        query = query.eq('status', selectedStatus);
+      }
+      if (selectedType !== 'All Types') {
+        query = query.eq('event_type', selectedType);
+      }
+      if (selectedRisk !== 'All Risk Levels') {
+        query = query.eq('risk_level', selectedRisk);
+      }
+      if (searchTerm) {
+        query = query.or(`external_id.ilike.%${searchTerm}%,name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      }
+
+      // Apply pagination
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      // Transform data to handle Supabase join arrays
+      const transformedData = (data || []).map((row: any) => ({
+        ...row,
+        disease: Array.isArray(row.disease) ? row.disease[0] || null : row.disease,
+        admin_unit: Array.isArray(row.admin_unit) ? row.admin_unit[0] || null : row.admin_unit,
+      })) as Event[];
+
+      setEvents(transformedData);
+      setTotalCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    return true;
-  });
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, [selectedStatus, selectedType, selectedRisk, page]);
+
+  // Debounced search
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setPage(1);
+      fetchEvents();
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchEvents();
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -158,7 +154,7 @@ export default function EventsPage() {
     }
   };
 
-  const getRiskBadge = (risk: string) => {
+  const getRiskBadge = (risk: string | null) => {
     switch (risk) {
       case 'high':
         return <Badge variant="destructive">High Risk</Badge>;
@@ -167,7 +163,7 @@ export default function EventsPage() {
       case 'low':
         return <Badge variant="success">Low Risk</Badge>;
       default:
-        return <Badge variant="secondary">{risk}</Badge>;
+        return <Badge variant="secondary">Unknown</Badge>;
     }
   };
 
@@ -185,11 +181,26 @@ export default function EventsPage() {
   };
 
   const stats = {
-    ongoing: mockEvents.filter((e) => e.status === 'ongoing').length,
-    investigating: mockEvents.filter((e) => e.status === 'under_investigation').length,
-    totalCases: mockEvents.reduce((sum, e) => sum + e.cases_count, 0),
-    totalDeaths: mockEvents.reduce((sum, e) => sum + e.deaths_count, 0),
+    ongoing: events.filter((e) => e.status === 'ongoing').length,
+    investigating: events.filter((e) => e.status === 'under_investigation').length,
+    totalCases: events.reduce((sum, e) => sum + (e.total_cases || 0), 0),
+    totalDeaths: events.reduce((sum, e) => sum + (e.total_deaths || 0), 0),
   };
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startItem = (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalCount);
+
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading events...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -202,6 +213,10 @@ export default function EventsPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export
@@ -248,7 +263,7 @@ export default function EventsPage() {
                 <Activity className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{stats.totalCases}</p>
+                <p className="text-2xl font-bold text-foreground">{stats.totalCases.toLocaleString()}</p>
                 <p className="text-sm text-muted-foreground">Total Cases</p>
               </div>
             </div>
@@ -277,45 +292,48 @@ export default function EventsPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search events by ID, title, disease, or location..."
+                  placeholder="Search events by ID, title, or description..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
-            <Select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-48"
-            >
-              {statuses.map((s) => (
-                <option key={s} value={s}>
-                  {s === 'All Statuses' ? s : s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </option>
-              ))}
+            <Select value={selectedStatus} onValueChange={(value) => { setSelectedStatus(value); setPage(1); }}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statuses.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s === 'All Statuses' ? s : s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
-            <Select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-48"
-            >
-              {eventTypes.map((t) => (
-                <option key={t} value={t}>
-                  {t === 'All Types' ? t : t.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </option>
-              ))}
+            <Select value={selectedType} onValueChange={(value) => { setSelectedType(value); setPage(1); }}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {eventTypes.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t === 'All Types' ? t : t.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
-            <Select
-              value={selectedRisk}
-              onChange={(e) => setSelectedRisk(e.target.value)}
-              className="w-40"
-            >
-              {riskLevels.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
+            <Select value={selectedRisk} onValueChange={(value) => { setSelectedRisk(value); setPage(1); }}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Risk Level" />
+              </SelectTrigger>
+              <SelectContent>
+                {riskLevels.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
             <Button variant="outline">
               <Filter className="mr-2 h-4 w-4" />
@@ -326,83 +344,112 @@ export default function EventsPage() {
       </Card>
 
       {/* Events Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredEvents.map((event) => (
-          <Card key={event.id} className="overflow-hidden transition-all hover:border-primary/50">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-primary">{event.external_id}</span>
-                    {getEventTypeBadge(event.event_type)}
+      {events.length === 0 ? (
+        <Card>
+          <CardContent className="flex h-[400px] flex-col items-center justify-center">
+            <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold text-foreground">No Events Found</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {searchTerm || selectedStatus !== 'All Statuses' || selectedType !== 'All Types' || selectedRisk !== 'All Risk Levels'
+                ? 'Try adjusting your filters or search terms'
+                : 'No events have been recorded yet'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {events.map((event) => (
+            <Card key={event.id} className="overflow-hidden transition-all hover:border-primary/50">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-primary">{event.external_id}</span>
+                      {getEventTypeBadge(event.event_type)}
+                    </div>
+                    <CardTitle className="text-lg line-clamp-1">{event.name}</CardTitle>
                   </div>
-                  <CardTitle className="text-lg">{event.title}</CardTitle>
+                  <AlertTriangle className={`h-5 w-5 ${event.risk_level === 'high' ? 'text-destructive' : event.risk_level === 'medium' ? 'text-warning' : 'text-muted-foreground'}`} />
                 </div>
-                <AlertTriangle className={`h-5 w-5 ${event.risk_level === 'high' ? 'text-destructive' : event.risk_level === 'medium' ? 'text-warning' : 'text-muted-foreground'}`} />
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground line-clamp-2">{event.description || 'No description available'}</p>
 
-              <div className="flex flex-wrap gap-2">
-                {getStatusBadge(event.status)}
-                {getRiskBadge(event.risk_level)}
-                <Badge variant="outline">{event.disease}</Badge>
-              </div>
+                <div className="flex flex-wrap gap-2">
+                  {getStatusBadge(event.status)}
+                  {getRiskBadge(event.risk_level)}
+                  <Badge variant="outline">{event.disease?.name || 'Unknown Disease'}</Badge>
+                </div>
 
-              <div className="grid grid-cols-3 gap-4 rounded-lg bg-muted/50 p-3">
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{event.cases_count}</p>
-                  <p className="text-xs text-muted-foreground">Cases</p>
+                <div className="grid grid-cols-3 gap-4 rounded-lg bg-muted/50 p-3">
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-foreground">{event.total_cases || 0}</p>
+                    <p className="text-xs text-muted-foreground">Cases</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-foreground">{event.total_deaths || 0}</p>
+                    <p className="text-xs text-muted-foreground">Deaths</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-foreground">{event.total_contacts || 0}</p>
+                    <p className="text-xs text-muted-foreground">Contacts</p>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{event.deaths_count}</p>
-                  <p className="text-xs text-muted-foreground">Deaths</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-foreground">{event.contacts_count}</p>
-                  <p className="text-xs text-muted-foreground">Contacts</p>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{event.admin_unit}</span>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    <span className="truncate max-w-[120px]">{event.admin_unit?.name || 'Unknown'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>{event.start_date ? new Date(event.start_date).toLocaleDateString() : 'N/A'}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{event.start_date}</span>
-                </div>
-              </div>
 
-              <Link href={`/events/${event.id}`}>
-                <Button variant="outline" className="w-full">
-                  <Eye className="mr-2 h-4 w-4" />
-                  View Details
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                <Link href={`/events/${event.id}`}>
+                  <Button variant="outline" className="w-full">
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing 1 to {filteredEvents.length} of {filteredEvents.length} events
-        </p>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" disabled>
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          <Button variant="outline" size="sm" disabled>
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+      {totalCount > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {startItem} to {endItem} of {totalCount} events
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(page + 1)}
+              disabled={page >= totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
