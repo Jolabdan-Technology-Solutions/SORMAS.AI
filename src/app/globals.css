@@ -1,31 +1,32 @@
 @import "tailwindcss";
 
 /*
- * SORMAS AI - Premium Dark Theme
- * High contrast, accessible dark mode design
+ * SORMAS AI - Futuristic AI-Inspired Dark Theme
+ * Premium dark mode with neural network aesthetics
  */
 
 :root {
-  /* Dark theme colors - always dark */
-  --background: 8 8 12;
+  /* Deep space dark theme */
+  --background: 3 0 20;
   --foreground: 248 250 252;
 
-  --card: 15 15 20;
+  --card: 10 8 25;
   --card-foreground: 248 250 252;
 
-  --popover: 20 20 28;
+  --popover: 15 12 35;
   --popover-foreground: 248 250 252;
 
+  /* AI Indigo Primary */
   --primary: 99 102 241;
   --primary-foreground: 255 255 255;
 
-  --secondary: 30 32 40;
+  --secondary: 25 20 50;
   --secondary-foreground: 226 232 240;
 
-  --muted: 30 32 40;
+  --muted: 25 20 50;
   --muted-foreground: 148 163 184;
 
-  --accent: 40 42 54;
+  --accent: 35 30 65;
   --accent-foreground: 248 250 252;
 
   --destructive: 239 68 68;
@@ -37,15 +38,15 @@
   --warning: 245 158 11;
   --warning-foreground: 0 0 0;
 
-  --border: 45 48 60;
-  --input: 45 48 60;
+  --border: 50 45 80;
+  --input: 50 45 80;
   --ring: 99 102 241;
 
   --radius: 0.75rem;
 
-  --sidebar: 12 12 16;
+  --sidebar: 5 3 15;
   --sidebar-foreground: 248 250 252;
-  --sidebar-accent: 30 32 40;
+  --sidebar-accent: 25 20 50;
 
   --chart-1: 99 102 241;
   --chart-2: 52 211 153;
@@ -55,25 +56,25 @@
 }
 
 .dark {
-  --background: 8 8 12;
+  --background: 3 0 20;
   --foreground: 248 250 252;
 
-  --card: 15 15 20;
+  --card: 10 8 25;
   --card-foreground: 248 250 252;
 
-  --popover: 20 20 28;
+  --popover: 15 12 35;
   --popover-foreground: 248 250 252;
 
   --primary: 99 102 241;
   --primary-foreground: 255 255 255;
 
-  --secondary: 30 32 40;
+  --secondary: 25 20 50;
   --secondary-foreground: 226 232 240;
 
-  --muted: 30 32 40;
+  --muted: 25 20 50;
   --muted-foreground: 148 163 184;
 
-  --accent: 40 42 54;
+  --accent: 35 30 65;
   --accent-foreground: 248 250 252;
 
   --destructive: 239 68 68;
@@ -85,13 +86,13 @@
   --warning: 245 158 11;
   --warning-foreground: 0 0 0;
 
-  --border: 45 48 60;
-  --input: 45 48 60;
+  --border: 50 45 80;
+  --input: 50 45 80;
   --ring: 99 102 241;
 
-  --sidebar: 12 12 16;
+  --sidebar: 5 3 15;
   --sidebar-foreground: 248 250 252;
-  --sidebar-accent: 30 32 40;
+  --sidebar-accent: 25 20 50;
 
   --chart-1: 99 102 241;
   --chart-2: 52 211 153;
@@ -141,43 +142,62 @@ html {
 }
 
 body {
-  background-color: rgb(8, 8, 12);
+  background: linear-gradient(135deg, rgb(3, 0, 20) 0%, rgb(10, 5, 30) 50%, rgb(3, 0, 20) 100%);
+  background-attachment: fixed;
   color: rgb(248, 250, 252);
   font-family: var(--font-sans);
+  min-height: 100vh;
 }
 
-/* Custom scrollbar */
+/* ===== AI GRID BACKGROUND ===== */
+.ai-grid-bg {
+  position: relative;
+}
+
+.ai-grid-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgb(8, 8, 12);
+  background: rgb(3, 0, 20);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(45, 48, 60);
+  background: linear-gradient(180deg, rgb(99, 102, 241) 0%, rgb(167, 139, 250) 100%);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(60, 65, 80);
+  background: linear-gradient(180deg, rgb(129, 132, 255) 0%, rgb(190, 165, 255) 100%);
 }
 
 /* ===== RECHARTS TOOLTIP STYLING ===== */
-/* This ensures chart tooltips are visible with proper contrast */
 .recharts-tooltip-wrapper {
   outline: none !important;
   z-index: 1000 !important;
 }
 
 .recharts-default-tooltip {
-  background-color: rgb(20, 20, 28) !important;
-  border: 1px solid rgb(60, 65, 80) !important;
-  border-radius: 8px !important;
+  background: linear-gradient(135deg, rgba(15, 12, 35, 0.95) 0%, rgba(25, 20, 50, 0.95) 100%) !important;
+  border: 1px solid rgba(99, 102, 241, 0.3) !important;
+  border-radius: 12px !important;
   padding: 12px 16px !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .recharts-tooltip-label {
@@ -206,24 +226,22 @@ body {
   color: rgb(148, 163, 184) !important;
 }
 
-/* Recharts legend */
 .recharts-legend-item-text {
   color: rgb(148, 163, 184) !important;
   font-size: 12px !important;
 }
 
-/* Recharts axis */
 .recharts-cartesian-axis-tick-value {
   fill: rgb(148, 163, 184) !important;
   font-size: 12px !important;
 }
 
 .recharts-cartesian-grid line {
-  stroke: rgb(45, 48, 60) !important;
+  stroke: rgba(99, 102, 241, 0.1) !important;
 }
 
 .recharts-cartesian-axis-line {
-  stroke: rgb(45, 48, 60) !important;
+  stroke: rgba(99, 102, 241, 0.2) !important;
 }
 
 /* ===== DROPDOWN / POPOVER STYLING ===== */
@@ -231,55 +249,83 @@ body {
   z-index: 50 !important;
 }
 
-/* ===== HOVER STATES ===== */
-/* Ensure all hover states have proper contrast */
-.hover\:bg-muted\/50:hover {
-  background-color: rgba(30, 32, 40, 0.5) !important;
-}
-
-.hover\:bg-accent:hover {
-  background-color: rgb(40, 42, 54) !important;
-}
-
 /* ===== GLASS MORPHISM ===== */
 .glass {
-  background: rgba(20, 20, 28, 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(15, 12, 35, 0.8) 0%, rgba(25, 20, 50, 0.8) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(10, 8, 25, 0.9) 0%, rgba(20, 15, 40, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* ===== GRADIENT TEXT ===== */
 .gradient-text {
-  background: linear-gradient(135deg, rgb(99, 102, 241) 0%, rgb(167, 139, 250) 100%);
+  background: linear-gradient(135deg, rgb(99, 102, 241) 0%, rgb(167, 139, 250) 50%, rgb(236, 72, 153) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* ===== GLOW EFFECTS ===== */
+.gradient-text-cyan {
+  background: linear-gradient(135deg, rgb(34, 211, 238) 0%, rgb(99, 102, 241) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== AI GLOW EFFECTS ===== */
 .glow {
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4), 0 0 40px rgba(99, 102, 241, 0.2);
+}
+
+.glow-sm {
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
 }
 
 .glow-success {
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), 0 0 40px rgba(34, 197, 94, 0.2);
 }
 
 .glow-warning {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 40px rgba(245, 158, 11, 0.2);
 }
 
 .glow-destructive {
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+}
+
+.glow-purple {
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.4), 0 0 40px rgba(167, 139, 250, 0.2);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.4), 0 0 40px rgba(34, 211, 238, 0.2);
+}
+
+/* ===== NEON BORDERS ===== */
+.neon-border {
+  border: 1px solid transparent;
+  background: linear-gradient(rgb(10, 8, 25), rgb(10, 8, 25)) padding-box,
+              linear-gradient(135deg, rgb(99, 102, 241), rgb(167, 139, 250), rgb(236, 72, 153)) border-box;
+}
+
+.neon-border-subtle {
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.05);
 }
 
 /* ===== ANIMATIONS ===== */
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 5px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 5px rgba(99, 102, 241, 0.3), 0 0 10px rgba(99, 102, 241, 0.2);
   }
   50% {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.5), 0 0 40px rgba(99, 102, 241, 0.3);
   }
 }
 
@@ -303,6 +349,42 @@ body {
   }
 }
 
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-10px) translateX(5px);
+  }
+  50% {
+    transform: translateY(-20px) translateX(0);
+  }
+  75% {
+    transform: translateY(-10px) translateX(-5px);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
 .animate-slide-in {
   animation: slide-in 0.3s ease-out forwards;
 }
@@ -315,40 +397,125 @@ body {
   animation: fade-in 0.2s ease-out forwards;
 }
 
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
 /* ===== FOCUS STATES ===== */
 *:focus-visible {
   outline: 2px solid rgb(99, 102, 241);
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
 }
 
 /* ===== SELECTION ===== */
 ::selection {
-  background-color: rgba(99, 102, 241, 0.3);
+  background-color: rgba(99, 102, 241, 0.4);
   color: rgb(248, 250, 252);
 }
 
-/* ===== BROWSER EXTENSION HIGHLIGHT OVERRIDES ===== */
-/* Override common browser extension highlight colors */
-::target-text {
-  background-color: rgba(99, 102, 241, 0.3) !important;
+/* ===== HOVER STATES ===== */
+.hover\:bg-muted\/50:hover {
+  background-color: rgba(25, 20, 50, 0.5) !important;
+}
+
+.hover\:bg-accent:hover {
+  background-color: rgb(35, 30, 65) !important;
+}
+
+/* ===== CARD ENHANCEMENTS ===== */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* ===== BUTTONS ===== */
+.btn-ai {
+  background: linear-gradient(135deg, rgb(99, 102, 241) 0%, rgb(167, 139, 250) 100%);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  transition: all 0.3s ease;
+}
+
+.btn-ai:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+/* ===== INPUTS ===== */
+input, textarea, select {
+  background-color: rgba(25, 20, 50, 0.5) !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
   color: rgb(248, 250, 252) !important;
 }
 
-mark {
-  background-color: rgba(99, 102, 241, 0.3) !important;
-  color: rgb(248, 250, 252) !important;
+input:focus, textarea:focus, select:focus {
+  border-color: rgb(99, 102, 241) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2) !important;
 }
 
-/* Google Translate highlight overrides */
-font[style*="background"],
-span[style*="background: rgb(255"],
-span[style*="background-color: rgb(255"],
-span[style*="background:rgb(255"],
-span[style*="background-color:rgb(255"],
-[style*="background: white"],
-[style*="background-color: white"],
-[style*="background:#fff"],
-[style*="background-color:#fff"] {
-  background: transparent !important;
-  background-color: transparent !important;
+input::placeholder, textarea::placeholder {
+  color: rgb(100, 100, 130) !important;
+}
+
+/* ===== TABLES ===== */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  background-color: rgba(25, 20, 50, 0.8) !important;
+  color: rgb(148, 163, 184) !important;
+}
+
+tr:hover td {
+  background-color: rgba(99, 102, 241, 0.05) !important;
+}
+
+/* ===== BADGES ===== */
+.badge-glow {
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* ===== STAT CARDS ===== */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgb(99, 102, 241), rgb(167, 139, 250), rgb(236, 72, 153));
+}
+
+/* ===== NEURAL NETWORK PATTERN ===== */
+.neural-bg {
+  background-image: radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(167, 139, 250, 0.1) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 80%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+}
+
+/* ===== SCAN LINE EFFECT ===== */
+.scan-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.03) 50%, transparent 100%);
+  animation: scan-line 8s linear infinite;
+  pointer-events: none;
 }
