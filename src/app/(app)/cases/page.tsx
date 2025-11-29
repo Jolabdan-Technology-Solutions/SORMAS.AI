@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -24,6 +23,10 @@ import {
   Calendar,
   MapPin,
   Activity,
+  Plus,
+  TrendingUp,
+  HeartPulse,
+  UserCheck,
 } from 'lucide-react';
 
 // Mock cases data
@@ -129,8 +132,6 @@ export default function CasesPage() {
   const [selectedDisease, setSelectedDisease] = useState('All Diseases');
   const [selectedClassification, setSelectedClassification] = useState('All Classifications');
   const [selectedOutcome, setSelectedOutcome] = useState('All Outcomes');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const filteredCases = mockCases.filter((c) => {
     if (selectedDisease !== 'All Diseases' && c.disease !== selectedDisease) return false;
@@ -176,13 +177,20 @@ export default function CasesPage() {
     }
   };
 
+  const stats = {
+    total: mockCases.length,
+    confirmed: mockCases.filter((c) => c.classification === 'confirmed').length,
+    active: mockCases.filter((c) => c.outcome === 'ongoing').length,
+    recovered: mockCases.filter((c) => c.outcome === 'recovered').length,
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cases</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-foreground">Cases</h1>
+          <p className="text-muted-foreground">
             View and manage disease surveillance cases
           </p>
         </div>
@@ -193,7 +201,7 @@ export default function CasesPage() {
           </Button>
           <Link href="/etl/import">
             <Button>
-              <FileText className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 h-4 w-4" />
               Import Cases
             </Button>
           </Link>
@@ -202,60 +210,54 @@ export default function CasesPage() {
 
       {/* Stats Summary */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-full bg-blue-100 p-3">
-                <FileText className="h-6 w-6 text-blue-600" />
+              <div className="rounded-full bg-primary/20 p-3">
+                <FileText className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{mockCases.length}</p>
-                <p className="text-sm text-gray-500">Total Cases</p>
+                <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+                <p className="text-sm text-muted-foreground">Total Cases</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-destructive">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-full bg-red-100 p-3">
-                <Activity className="h-6 w-6 text-red-600" />
+              <div className="rounded-full bg-destructive/20 p-3">
+                <Activity className="h-6 w-6 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-bold">
-                  {mockCases.filter((c) => c.classification === 'confirmed').length}
-                </p>
-                <p className="text-sm text-gray-500">Confirmed</p>
+                <p className="text-2xl font-bold text-foreground">{stats.confirmed}</p>
+                <p className="text-sm text-muted-foreground">Confirmed</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-warning">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-full bg-yellow-100 p-3">
-                <Activity className="h-6 w-6 text-yellow-600" />
+              <div className="rounded-full bg-warning/20 p-3">
+                <HeartPulse className="h-6 w-6 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">
-                  {mockCases.filter((c) => c.outcome === 'ongoing').length}
-                </p>
-                <p className="text-sm text-gray-500">Active</p>
+                <p className="text-2xl font-bold text-foreground">{stats.active}</p>
+                <p className="text-sm text-muted-foreground">Active</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-success">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="rounded-full bg-green-100 p-3">
-                <Activity className="h-6 w-6 text-green-600" />
+              <div className="rounded-full bg-success/20 p-3">
+                <UserCheck className="h-6 w-6 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">
-                  {mockCases.filter((c) => c.outcome === 'recovered').length}
-                </p>
-                <p className="text-sm text-gray-500">Recovered</p>
+                <p className="text-2xl font-bold text-foreground">{stats.recovered}</p>
+                <p className="text-sm text-muted-foreground">Recovered</p>
               </div>
             </div>
           </CardContent>
@@ -268,7 +270,7 @@ export default function CasesPage() {
           <div className="flex flex-wrap gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search by ID, name, or location..."
                   value={searchTerm}
@@ -323,56 +325,56 @@ export default function CasesPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="border-b border-gray-200 bg-gray-50">
+              <thead className="border-b border-border bg-muted/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Case ID
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Person
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Disease
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Classification
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Outcome
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Location
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Report Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
+              <tbody className="divide-y divide-border">
                 {filteredCases.map((caseItem) => (
-                  <tr key={caseItem.id} className="hover:bg-gray-50">
+                  <tr key={caseItem.id} className="transition-colors hover:bg-muted/50">
                     <td className="whitespace-nowrap px-6 py-4">
-                      <span className="font-mono text-sm text-blue-600">
+                      <span className="font-mono text-sm text-primary">
                         {caseItem.external_id}
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <div>
-                        <p className="font-medium">
+                        <p className="font-medium text-foreground">
                           {caseItem.person.first_name} {caseItem.person.last_name}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {caseItem.person.age_years} yrs, {caseItem.person.sex}
                         </p>
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Activity className="h-4 w-4 text-gray-400" />
-                        {caseItem.disease}
+                        <Activity className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-foreground">{caseItem.disease}</span>
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
@@ -382,13 +384,13 @@ export default function CasesPage() {
                       {getOutcomeBadge(caseItem.outcome)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <MapPin className="h-4 w-4" />
                         {caseItem.admin_unit}
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
                         {caseItem.report_date}
                       </div>
@@ -406,8 +408,8 @@ export default function CasesPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-gray-200 px-6 py-4">
-            <p className="text-sm text-gray-500">
+          <div className="flex items-center justify-between border-t border-border px-6 py-4">
+            <p className="text-sm text-muted-foreground">
               Showing 1 to {filteredCases.length} of {filteredCases.length} results
             </p>
             <div className="flex items-center gap-2">
