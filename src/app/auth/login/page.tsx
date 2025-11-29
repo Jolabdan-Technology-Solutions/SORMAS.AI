@@ -62,9 +62,8 @@ export default function LoginPage() {
   };
 
   const stats = [
-    { label: 'Countries', value: '195+', icon: Globe },
     { label: 'Diseases Tracked', value: '50+', icon: Activity },
-    { label: 'AI Models Active', value: '12', icon: Brain },
+    { label: 'AI Models', value: '12', icon: Brain },
   ];
 
   return (
