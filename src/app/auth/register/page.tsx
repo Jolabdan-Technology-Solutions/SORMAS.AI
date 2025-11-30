@@ -100,6 +100,22 @@ export default function RegisterPage() {
         console.error('Error storing access request:', requestError);
       }
 
+      // Send email notification to admin
+      try {
+        await fetch('/api/notify-registration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            fullName: formData.fullName,
+            organization: formData.organization,
+          }),
+        });
+      } catch (notifyError) {
+        // Don't fail registration if notification fails
+        console.error('Failed to send admin notification:', notifyError);
+      }
+
       setSuccess(true);
     } catch (err) {
       console.error('Registration error:', err);
