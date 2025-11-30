@@ -37,6 +37,45 @@ import { createClient } from '@/lib/supabase/client';
 // Default tenant ID - should come from auth context in production
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
+// Check if in demo mode
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('sormas_demo_mode') === 'true';
+}
+
+// Generate demo samples data
+function generateDemoSamples(): Sample[] {
+  const sampleTypes = ['blood', 'stool', 'serum', 'nasopharyngeal_swab', 'urine', 'sputum'];
+  const testTypes = ['PCR', 'Rapid Antigen', 'Culture', 'ELISA', 'Microscopy', 'Serology'];
+  const testResults = ['pending', 'positive', 'negative', 'inconclusive', 'in_progress'];
+  const labNames = ['National Reference Laboratory', 'Lagos State Laboratory', 'NCDC Central Lab', 'University Teaching Hospital Lab', 'Regional Public Health Lab'];
+  const diseases = ['Cholera', 'COVID-19', 'Lassa Fever', 'Measles', 'Malaria', 'Yellow Fever'];
+
+  return Array.from({ length: 20 }, (_, i) => {
+    const collectionDate = new Date();
+    collectionDate.setDate(collectionDate.getDate() - Math.floor(Math.random() * 30));
+    const receivedDate = new Date(collectionDate);
+    receivedDate.setDate(receivedDate.getDate() + Math.floor(Math.random() * 3));
+    const testResult = testResults[Math.floor(Math.random() * testResults.length)];
+    const hasResult = !['pending', 'in_progress'].includes(testResult);
+
+    return {
+      id: `demo-sample-${i + 1}`,
+      external_id: `SMP-2024-${String(10000 + i).padStart(5, '0')}`,
+      sample_type: sampleTypes[Math.floor(Math.random() * sampleTypes.length)],
+      sample_material: null,
+      collection_date: collectionDate.toISOString().split('T')[0],
+      received_date: receivedDate.toISOString().split('T')[0],
+      lab_name: labNames[Math.floor(Math.random() * labNames.length)],
+      test_type: testTypes[Math.floor(Math.random() * testTypes.length)],
+      test_result: testResult,
+      result_date: hasResult ? new Date(receivedDate.getTime() + Math.random() * 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : null,
+      case: { external_id: `NGA-2024-${String(10000 + i).padStart(5, '0')}` },
+      disease: { name: diseases[Math.floor(Math.random() * diseases.length)] },
+    };
+  });
+}
+
 interface Sample {
   id: string;
   external_id: string;
@@ -72,6 +111,16 @@ export default function SamplesPage() {
 
   const fetchSamples = async () => {
     try {
+      // Check if in demo mode - use mock data
+      if (isDemoMode()) {
+        const demoSamples = generateDemoSamples();
+        setSamples(demoSamples);
+        setTotalCount(156);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
       let query = supabase
         .from('samples')
         .select(`

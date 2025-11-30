@@ -160,10 +160,120 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// Check if in demo mode
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('sormas_demo_mode') === 'true';
+}
+
+// Generate comprehensive demo data
+function generateDemoData() {
+  return {
+    stats: {
+      totalCases: 2169,
+      totalContacts: 4523,
+      activeOutbreaks: 7,
+      predictions: 12,
+      caseChange: 12,
+      contactChange: -5,
+      outbreakChange: 2,
+      predictionChange: 8,
+    },
+    weeklyTrend: [
+      { week: 'W45', cases: 312, contacts: 156, deaths: 8 },
+      { week: 'W46', cases: 287, contacts: 198, deaths: 6 },
+      { week: 'W47', cases: 345, contacts: 234, deaths: 12 },
+      { week: 'W48', cases: 298, contacts: 187, deaths: 9 },
+      { week: 'W49', cases: 367, contacts: 245, deaths: 14 },
+      { week: 'W50', cases: 412, contacts: 312, deaths: 11 },
+      { week: 'W51', cases: 389, contacts: 278, deaths: 8 },
+      { week: 'W52', cases: 356, contacts: 256, deaths: 7 },
+    ],
+    topDiseases: [
+      { name: 'Cholera', cases: 567, change: 15, color: '#3B82F6' },
+      { name: 'Malaria', cases: 1234, change: -8, color: '#10B981' },
+      { name: 'COVID-19', cases: 234, change: 5, color: '#8B5CF6' },
+      { name: 'Measles', cases: 89, change: 22, color: '#F97316' },
+      { name: 'Lassa Fever', cases: 45, change: -12, color: '#EF4444' },
+    ],
+    classificationData: [
+      { name: 'Confirmed', value: 1234, color: '#EF4444' },
+      { name: 'Probable', value: 567, color: '#F97316' },
+      { name: 'Suspected', value: 368, color: '#FBBF24' },
+    ],
+    recentAlerts: [
+      {
+        id: '1',
+        alert_type: 'threshold_exceeded',
+        severity: 'critical',
+        title: 'Cholera Outbreak Alert',
+        description: 'Case count in Lagos exceeded threshold of 50 cases in 7 days',
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: '2',
+        alert_type: 'prediction_warning',
+        severity: 'warning',
+        title: 'AI Prediction: Malaria Surge',
+        description: 'Model predicts 25% increase in malaria cases in Kano next week',
+        created_at: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+      },
+      {
+        id: '3',
+        alert_type: 'unusual_pattern',
+        severity: 'info',
+        title: 'Unusual Pattern Detected',
+        description: 'Cluster of respiratory infections in Abuja FCT requires investigation',
+        created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      },
+    ],
+    activeOutbreaks: [
+      {
+        id: '1',
+        name: 'Lagos Cholera Outbreak',
+        disease: { name: 'Cholera' },
+        admin_unit: { name: 'Lagos State' },
+        total_cases: 245,
+        total_deaths: 12,
+        status: 'ongoing',
+        start_date: '2024-11-15',
+      },
+      {
+        id: '2',
+        name: 'Kano Measles Cluster',
+        disease: { name: 'Measles' },
+        admin_unit: { name: 'Kano State' },
+        total_cases: 89,
+        total_deaths: 4,
+        status: 'under_investigation',
+        start_date: '2024-11-20',
+      },
+      {
+        id: '3',
+        name: 'Borno Meningitis Response',
+        disease: { name: 'Meningitis' },
+        admin_unit: { name: 'Borno State' },
+        total_cases: 178,
+        total_deaths: 15,
+        status: 'ongoing',
+        start_date: '2024-11-10',
+      },
+    ],
+    dataIntegration: {
+      lastSync: '2 hours ago',
+      recordsProcessed: 15234,
+      dataSources: { active: 3, total: 5 },
+      dataQuality: 94.5,
+      pendingSamples: 23,
+    },
+  };
+}
+
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [dateRange, setDateRange] = useState('30');
+  const [isDemo, setIsDemo] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     totalCases: 0,
     totalContacts: 0,
@@ -191,6 +301,22 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
+      // Check if in demo mode - use mock data
+      if (isDemoMode()) {
+        setIsDemo(true);
+        const demoData = generateDemoData();
+        setStats(demoData.stats);
+        setWeeklyTrend(demoData.weeklyTrend);
+        setTopDiseases(demoData.topDiseases);
+        setClassificationData(demoData.classificationData);
+        setRecentAlerts(demoData.recentAlerts);
+        setActiveOutbreaks(demoData.activeOutbreaks);
+        setDataIntegration(demoData.dataIntegration);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - parseInt(dateRange));

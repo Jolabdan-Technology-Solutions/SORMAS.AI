@@ -35,6 +35,120 @@ import { createClient } from '@/lib/supabase/client';
 // Default tenant ID - should come from auth context in production
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
+// Check if in demo mode
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('sormas_demo_mode') === 'true';
+}
+
+// Generate demo events data
+function generateDemoEvents(): Event[] {
+  const diseases = ['Cholera', 'Malaria', 'COVID-19', 'Measles', 'Lassa Fever', 'Meningitis', 'Yellow Fever'];
+  const locations = ['Lagos State', 'Kano State', 'Abuja FCT', 'Rivers State', 'Oyo State', 'Kaduna State', 'Borno State'];
+  const eventTypes = ['outbreak', 'cluster', 'suspected_outbreak', 'surveillance_event'];
+  const statuses = ['ongoing', 'under_investigation', 'closed'];
+  const riskLevels = ['high', 'medium', 'low'];
+
+  return [
+    {
+      id: 'demo-event-1',
+      external_id: 'EVT-2024-001',
+      name: 'Lagos Cholera Outbreak 2024',
+      event_type: 'outbreak',
+      status: 'ongoing',
+      start_date: '2024-11-15',
+      end_date: null,
+      description: 'Active cholera outbreak affecting multiple LGAs in Lagos State with increasing case count.',
+      total_cases: 245,
+      total_deaths: 12,
+      total_contacts: 892,
+      risk_level: 'high',
+      disease: { name: 'Cholera' },
+      admin_unit: { name: 'Lagos State' },
+    },
+    {
+      id: 'demo-event-2',
+      external_id: 'EVT-2024-002',
+      name: 'Kano Measles Cluster',
+      event_type: 'cluster',
+      status: 'under_investigation',
+      start_date: '2024-11-20',
+      end_date: null,
+      description: 'Cluster of measles cases reported in Nassarawa LGA, primarily affecting unvaccinated children.',
+      total_cases: 89,
+      total_deaths: 4,
+      total_contacts: 234,
+      risk_level: 'medium',
+      disease: { name: 'Measles' },
+      admin_unit: { name: 'Kano State' },
+    },
+    {
+      id: 'demo-event-3',
+      external_id: 'EVT-2024-003',
+      name: 'Borno Meningitis Response',
+      event_type: 'outbreak',
+      status: 'ongoing',
+      start_date: '2024-11-10',
+      end_date: null,
+      description: 'Meningitis outbreak in IDP camps requiring urgent vaccination response.',
+      total_cases: 178,
+      total_deaths: 15,
+      total_contacts: 567,
+      risk_level: 'high',
+      disease: { name: 'Meningitis' },
+      admin_unit: { name: 'Borno State' },
+    },
+    {
+      id: 'demo-event-4',
+      external_id: 'EVT-2024-004',
+      name: 'Abuja COVID-19 Surveillance',
+      event_type: 'surveillance_event',
+      status: 'ongoing',
+      start_date: '2024-10-01',
+      end_date: null,
+      description: 'Ongoing COVID-19 surveillance and testing in FCT hospitals.',
+      total_cases: 156,
+      total_deaths: 2,
+      total_contacts: 445,
+      risk_level: 'low',
+      disease: { name: 'COVID-19' },
+      admin_unit: { name: 'Abuja FCT' },
+    },
+    {
+      id: 'demo-event-5',
+      external_id: 'EVT-2024-005',
+      name: 'Rivers Lassa Fever Alert',
+      event_type: 'suspected_outbreak',
+      status: 'under_investigation',
+      start_date: '2024-11-25',
+      end_date: null,
+      description: 'Suspected Lassa fever cases reported from healthcare facilities.',
+      total_cases: 23,
+      total_deaths: 3,
+      total_contacts: 78,
+      risk_level: 'high',
+      disease: { name: 'Lassa Fever' },
+      admin_unit: { name: 'Rivers State' },
+    },
+    {
+      id: 'demo-event-6',
+      external_id: 'EVT-2024-006',
+      name: 'Oyo Yellow Fever Investigation',
+      event_type: 'suspected_outbreak',
+      status: 'closed',
+      start_date: '2024-10-15',
+      end_date: '2024-11-01',
+      description: 'Investigation concluded. No yellow fever outbreak confirmed.',
+      total_cases: 12,
+      total_deaths: 1,
+      total_contacts: 45,
+      risk_level: 'medium',
+      disease: { name: 'Yellow Fever' },
+      admin_unit: { name: 'Oyo State' },
+    },
+  ];
+}
+
 interface Event {
   id: string;
   external_id: string;
@@ -72,6 +186,22 @@ export default function EventsPage() {
 
   const fetchEvents = async () => {
     try {
+      // Check if in demo mode
+      if (isDemoMode()) {
+        const demoEvents = generateDemoEvents();
+        // Transform the data
+        const transformedEvents = demoEvents.map((event) => ({
+          ...event,
+          disease: event.disease,
+          admin_unit: event.admin_unit,
+        }));
+        setEvents(transformedEvents);
+        setTotalCount(6);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
       let query = supabase
         .from('events')
         .select(`

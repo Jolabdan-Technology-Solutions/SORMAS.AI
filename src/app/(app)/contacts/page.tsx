@@ -65,6 +65,59 @@ const FollowUpMap = dynamic(
 // Default tenant ID
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
+// Check if in demo mode
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('sormas_demo_mode') === 'true';
+}
+
+// Generate demo contacts data
+function generateDemoContacts(): Contact[] {
+  const relationships = ['spouse', 'colleague', 'neighbor', 'friend', 'family', 'healthcare worker', 'patient'];
+  const contactTypes = ['direct', 'household', 'workplace', 'community', 'healthcare'];
+  const riskLevels = ['high', 'medium', 'low'];
+  const statuses = ['under_follow_up', 'completed', 'lost_to_follow_up', 'converted_to_case'];
+  const locations = ['Lagos State', 'Kano State', 'Abuja FCT', 'Rivers State', 'Oyo State'];
+  const firstNames = ['Adaeze', 'Chukwuemeka', 'Fatima', 'Ibrahim', 'Ngozi', 'Olumide', 'Amina', 'Emeka', 'Zainab', 'Tunde'];
+  const lastNames = ['Okonkwo', 'Abdullahi', 'Adeyemi', 'Mohammed', 'Nnamdi', 'Bello', 'Okoro', 'Yusuf', 'Eze', 'Aliyu'];
+  const diseases = ['Cholera', 'COVID-19', 'Lassa Fever', 'Measles'];
+
+  return Array.from({ length: 25 }, (_, i) => {
+    const contactDate = new Date();
+    contactDate.setDate(contactDate.getDate() - Math.floor(Math.random() * 30));
+    const followUpUntil = new Date(contactDate);
+    followUpUntil.setDate(followUpUntil.getDate() + 21);
+
+    return {
+      id: `demo-contact-${i + 1}`,
+      contact_date: contactDate.toISOString().split('T')[0],
+      contact_type: contactTypes[Math.floor(Math.random() * contactTypes.length)],
+      relationship_to_case: relationships[Math.floor(Math.random() * relationships.length)],
+      risk_level: riskLevels[Math.floor(Math.random() * riskLevels.length)],
+      follow_up_status: statuses[Math.floor(Math.random() * statuses.length)],
+      follow_up_until: followUpUntil.toISOString().split('T')[0],
+      person: {
+        id: `person-${i}`,
+        first_name: firstNames[Math.floor(Math.random() * firstNames.length)],
+        last_name: lastNames[Math.floor(Math.random() * lastNames.length)],
+        age_years: Math.floor(Math.random() * 60) + 10,
+        sex: Math.random() > 0.5 ? 'Male' : 'Female',
+        phone: `+234 ${Math.floor(Math.random() * 900000000) + 100000000}`,
+      },
+      case: {
+        id: `case-${i}`,
+        external_id: `NGA-2024-${String(10000 + i).padStart(5, '0')}`,
+        disease: { name: diseases[Math.floor(Math.random() * diseases.length)] },
+      },
+      admin_unit: {
+        id: `admin-${i}`,
+        name: locations[Math.floor(Math.random() * locations.length)],
+        code: `NG-${Math.floor(Math.random() * 36) + 1}`,
+      },
+    };
+  });
+}
+
 interface Person {
   id: string;
   first_name: string;
@@ -160,6 +213,26 @@ export default function ContactsPage() {
   const fetchContacts = useCallback(async () => {
     setLoading(true);
     try {
+      // Check if in demo mode
+      if (isDemoMode()) {
+        const demoContacts = generateDemoContacts();
+        setContacts(demoContacts);
+        setPagination({
+          page: 1,
+          limit: 25,
+          total: 4523,
+          totalPages: 181,
+        });
+        setStats({
+          under_follow_up: 2345,
+          completed: 1567,
+          lost: 234,
+          converted: 377,
+        });
+        setLoading(false);
+        return;
+      }
+
       const offset = (pagination.page - 1) * pagination.limit;
 
       let query = supabase

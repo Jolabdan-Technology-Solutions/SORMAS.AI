@@ -39,6 +39,55 @@ import { createClient } from '@/lib/supabase/client';
 // Default tenant ID - should come from auth context in production
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
+// Check if in demo mode
+function isDemoMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem('sormas_demo_mode') === 'true';
+}
+
+// Generate demo cases data
+function generateDemoCases(): Case[] {
+  const diseases = ['Cholera', 'Malaria', 'COVID-19', 'Measles', 'Lassa Fever', 'Meningitis', 'Yellow Fever', 'Typhoid'];
+  const locations = ['Lagos State', 'Kano State', 'Abuja FCT', 'Rivers State', 'Oyo State', 'Kaduna State', 'Borno State'];
+  const classifications = ['confirmed', 'probable', 'suspected'];
+  const outcomes = ['recovered', 'ongoing', 'deceased', 'unknown'];
+  const firstNames = ['Adaeze', 'Chukwuemeka', 'Fatima', 'Ibrahim', 'Ngozi', 'Olumide', 'Amina', 'Emeka', 'Zainab', 'Tunde'];
+  const lastNames = ['Okonkwo', 'Abdullahi', 'Adeyemi', 'Mohammed', 'Nnamdi', 'Bello', 'Okoro', 'Yusuf', 'Eze', 'Aliyu'];
+
+  return Array.from({ length: 25 }, (_, i) => {
+    const reportDate = new Date();
+    reportDate.setDate(reportDate.getDate() - Math.floor(Math.random() * 60));
+
+    return {
+      id: `demo-case-${i + 1}`,
+      external_id: `NGA-2024-${String(10000 + i).padStart(5, '0')}`,
+      classification: classifications[Math.floor(Math.random() * classifications.length)],
+      outcome: outcomes[Math.floor(Math.random() * outcomes.length)],
+      hospitalized: Math.random() > 0.6,
+      icu_admission: Math.random() > 0.85,
+      report_date: reportDate.toISOString().split('T')[0],
+      onset_date: new Date(reportDate.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      outcome_date: null,
+      person: {
+        id: `person-${i}`,
+        first_name: firstNames[Math.floor(Math.random() * firstNames.length)],
+        last_name: lastNames[Math.floor(Math.random() * lastNames.length)],
+        age_years: Math.floor(Math.random() * 60) + 5,
+        sex: Math.random() > 0.5 ? 'Male' : 'Female',
+      },
+      disease: {
+        id: `disease-${i}`,
+        name: diseases[Math.floor(Math.random() * diseases.length)],
+      },
+      admin_unit: {
+        id: `admin-${i}`,
+        name: locations[Math.floor(Math.random() * locations.length)],
+        code: `NG-${Math.floor(Math.random() * 36) + 1}`,
+      },
+    };
+  });
+}
+
 interface Person {
   id: string;
   first_name: string;
@@ -136,6 +185,26 @@ export default function CasesPage() {
   const fetchCases = useCallback(async () => {
     setLoading(true);
     try {
+      // Check if in demo mode
+      if (isDemoMode()) {
+        const demoCases = generateDemoCases();
+        setCases(demoCases);
+        setPagination({
+          page: 1,
+          limit: 25,
+          total: 2169,
+          totalPages: 87,
+        });
+        setStats({
+          total: 2169,
+          confirmed: 1234,
+          active: 567,
+          recovered: 368,
+        });
+        setLoading(false);
+        return;
+      }
+
       const offset = (pagination.page - 1) * pagination.limit;
 
       let query = supabase
