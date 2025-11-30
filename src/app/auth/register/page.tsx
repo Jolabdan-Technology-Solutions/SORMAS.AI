@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -34,11 +35,14 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const supabase = createClient();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
+    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
@@ -51,10 +55,58 @@ export default function RegisterPage() {
       return;
     }
 
-    // Simulate registration request
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setSuccess(true);
-    setIsLoading(false);
+    try {
+      // Create user in Supabase Auth
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            organization: formData.organization,
+          },
+          // Don't automatically sign them in - they need admin approval
+          emailRedirectTo: `${window.location.origin}/auth/login`,
+        },
+      });
+
+      if (signUpError) {
+        // Handle specific error messages
+        if (signUpError.message.includes('already registered')) {
+          setError('An account with this email already exists. Please sign in instead.');
+        } else if (signUpError.message.includes('valid email')) {
+          setError('Please enter a valid email address.');
+        } else {
+          setError(signUpError.message);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Also store the request in a table for admin visibility
+      // This creates a record even if email confirmation is pending
+      const { error: requestError } = await supabase
+        .from('access_requests')
+        .insert({
+          email: formData.email,
+          full_name: formData.fullName,
+          organization: formData.organization,
+          status: 'pending',
+          user_id: data.user?.id || null,
+        });
+
+      // Don't fail if access_requests table doesn't exist
+      if (requestError && !requestError.message.includes('does not exist')) {
+        console.error('Error storing access request:', requestError);
+      }
+
+      setSuccess(true);
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -95,16 +147,24 @@ export default function RegisterPage() {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 mb-4">
                 <CheckCircle className="h-8 w-8 text-emerald-400" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Request Submitted</h2>
-              <p className="text-slate-400 mb-6">
-                Your registration request has been submitted. An administrator will review your request and contact you at <span className="text-indigo-400">{formData.email}</span>
+              <h2 className="text-2xl font-bold text-white mb-2">Account Created!</h2>
+              <p className="text-slate-400 mb-4">
+                Your account has been created successfully.
+              </p>
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 mb-6">
+                <p className="text-sm text-amber-300">
+                  <strong>Next step:</strong> Please check your email at <span className="text-amber-200">{formData.email}</span> to verify your account before signing in.
+                </p>
+              </div>
+              <p className="text-slate-500 text-sm mb-6">
+                An administrator may need to approve your access before you can use all features.
               </p>
               <Link
                 href="/auth/login"
                 className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back to login
+                Go to login
               </Link>
             </div>
           ) : (
@@ -228,10 +288,10 @@ export default function RegisterPage() {
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      Submitting...
+                      Creating account...
                     </div>
                   ) : (
-                    'Request Access'
+                    'Create Account'
                   )}
                 </Button>
               </form>
