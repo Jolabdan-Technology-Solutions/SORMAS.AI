@@ -68,10 +68,13 @@ export default function Home() {
             <span className="text-xl font-bold">SORMAS AI</span>
           </div>
           <div className="flex items-center gap-4">
+            <Link href="/pricing">
+              <Button variant="ghost">Pricing</Button>
+            </Link>
             <Link href="/auth/login">
               <Button variant="ghost">Sign in</Button>
             </Link>
-            <Link href="/auth/login">
+            <Link href="/auth/register">
               <Button>Get Started</Button>
             </Link>
           </div>
@@ -257,6 +260,9 @@ export default function Home() {
               Global Disease Surveillance & Prediction Platform
             </p>
             <div className="flex gap-6 text-sm text-gray-500">
+              <Link href="/pricing" className="hover:text-gray-900">
+                Pricing
+              </Link>
               <Link href="#" className="hover:text-gray-900">
                 Privacy
               </Link>

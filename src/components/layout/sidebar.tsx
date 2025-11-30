@@ -26,6 +26,7 @@ import {
   HelpCircle,
   Brain,
   Sparkles,
+  CreditCard,
 } from 'lucide-react';
 import { useTenantStore } from '@/lib/stores/tenant-store';
 
@@ -279,6 +280,15 @@ export function Sidebar() {
                 >
                   <HelpCircle className="h-4 w-4 text-indigo-400" />
                   Help & Support
+                </Link>
+
+                <Link
+                  href="/pricing"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  <CreditCard className="h-4 w-4 text-indigo-400" />
+                  Pricing & Plans
                 </Link>
 
                 <div className="mt-2 border-t border-white/10 pt-2">
