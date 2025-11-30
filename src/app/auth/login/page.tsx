@@ -17,11 +17,17 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Play,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
+
+// Demo credentials
+const DEMO_EMAIL = 'demo@sormas.ai';
+const DEMO_PASSWORD = 'demo1234';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,6 +36,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -58,6 +65,36 @@ export default function LoginPage() {
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setError('');
+    setIsDemoLoading(true);
+
+    try {
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+      });
+
+      if (authError) {
+        // If demo account doesn't exist in Supabase, redirect anyway for demo mode
+        // The app will handle demo mode based on the email
+        console.log('Demo login via Supabase failed, using demo mode');
+        // Store demo mode in localStorage
+        localStorage.setItem('sormas_demo_mode', 'true');
+        router.push('/dashboard');
+        return;
+      }
+
+      router.push('/dashboard');
+    } catch (err) {
+      // Fallback to demo mode
+      localStorage.setItem('sormas_demo_mode', 'true');
+      router.push('/dashboard');
+    } finally {
+      setIsDemoLoading(false);
     }
   };
 
@@ -230,6 +267,29 @@ export default function LoginPage() {
               <p className="mt-2 text-slate-400">Sign in to access your dashboard</p>
             </div>
 
+            {/* Demo Button */}
+            <button
+              onClick={handleDemoLogin}
+              disabled={isDemoLoading}
+              className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-emerald-400 transition-all hover:bg-emerald-500/20 hover:border-emerald-500/50 disabled:opacity-50"
+            >
+              {isDemoLoading ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-400/30 border-t-emerald-400" />
+              ) : (
+                <Play className="h-5 w-5" />
+              )}
+              <span className="font-medium">Try Demo - No signup required</span>
+            </button>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-[#0a0a1a] px-4 text-slate-500">or sign in with email</span>
+              </div>
+            </div>
+
             <form onSubmit={handleLogin} className="space-y-6">
               {error && (
                 <div className="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
@@ -314,16 +374,23 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-8 text-center">
+            <div className="mt-6 space-y-4 text-center">
               <p className="text-sm text-slate-500">
                 Don&apos;t have an account?{' '}
                 <Link
                   href="/auth/register"
                   className="text-indigo-400 hover:text-indigo-300 transition-colors"
                 >
-                  Contact administrator
+                  Start free trial
                 </Link>
               </p>
+              <Link
+                href="/pricing"
+                className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <Users className="h-4 w-4" />
+                View pricing plans
+              </Link>
             </div>
           </div>
 
